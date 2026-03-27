@@ -1,0 +1,9 @@
+[project]
+name = "ragify"
+version = "0.1.0"
+description = "Adaptive RAG"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.135.2",
+]
