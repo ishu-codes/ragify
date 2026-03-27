@@ -1,7 +1,6 @@
-from typing import List, Optional
-
 from fastapi import FastAPI
-from pydantic import BaseModel
+
+from src.routes import docs, query
 
 app = FastAPI()
 
@@ -15,21 +14,5 @@ def read_root():
     }
 
 
-
-class UploadBody(BaseModel):
-    session_id: str
-    docs: Optional[List[str]] = []
-
-@app.post("/api/docs/upload")
-def upload_docs(body: UploadBody, q: str | None = None):
-    return {"body": body}
-
-
-
-class QueryBody(BaseModel):
-    session_id: str
-    query: str
-
-@app.post("/api/query")
-def query_rag(body: QueryBody):
-    return {"body": body}
+app.include_router(docs.router, prefix="/docs", tags=["Docs"])
+app.include_router(query.router, prefix="/query", tags=["Query"])

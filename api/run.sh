@@ -4,10 +4,19 @@ set -e
 
 BASE_URL='http://localhost:8000'
 
+source .venv/bin/activate
+
 case "$1" in
+    dev)
+        fastapi dev main.py
+    ;;
+
+
+    #  curl commands
     root)
         curl -X GET $BASE_URL
     ;;
+
 
     upload)
         curl -X POST $BASE_URL/api/docs/upload \
@@ -27,7 +36,7 @@ case "$1" in
     ;;
 
     *)
-        echo "Usage: $0 {root|upload|query}"
+        echo "Usage: $0 {dev|root|upload|query}"
         exit 1
     ;;
 esac
