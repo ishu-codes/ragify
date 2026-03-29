@@ -6,5 +6,5 @@ router = APIRouter()
 
 
 @router.post("/upload")
-def upload_docs(body: UploadBody):
+async def upload_docs(body: UploadBody):
     return {"body": body}

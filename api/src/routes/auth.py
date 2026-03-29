@@ -5,10 +5,10 @@ from src.types.auth import LoginBody, RegisterBody
 router = APIRouter()
 
 @router.post("/login")
-def login(body: LoginBody):
+async def login(body: LoginBody):
     pass
 
 
 @router.post("/register")
-def register(body: RegisterBody):
+async def register(body: RegisterBody):
     pass
