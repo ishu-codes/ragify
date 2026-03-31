@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from src.routes import docs, query, workspace
+from src.routes import workspace
 
 app = FastAPI(title="Ragify")
 
@@ -14,6 +14,4 @@ async def read_root():
     }
 
 
-app.include_router(docs.router, prefix="/docs", tags=["Docs"])
-app.include_router(workspace.router, prefix="/workspace", tags=["Workspace"])
-app.include_router(query.router, prefix="/query", tags=["Query"])
+app.include_router(workspace.router, prefix="/api/workspaces", tags=["Workspace"])
