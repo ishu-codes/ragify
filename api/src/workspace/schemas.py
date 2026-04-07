@@ -1,7 +1,7 @@
 
 from typing import List, Optional
 
-from langchain_core.messages import AIMessage, BaseMessage, ChatMessage
+from langchain_core.messages import BaseMessage
 from pydantic import BaseModel, Field
 
 
@@ -19,3 +19,18 @@ class Workspace(BaseModel):
 
     class Config:
         populate_by_name = True
+
+
+# For request/response
+class WorkspaceBody(BaseModel):
+    user_id: str
+
+
+class UploadBody(BaseModel):
+    session_id: str
+    docs: Optional[List[str]] = []
+
+
+class QueryBody(BaseModel):
+    session_id: str
+    query: str

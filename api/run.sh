@@ -3,6 +3,7 @@
 set -e
 
 BASE_URL='http://localhost:8000'
+BASE_URL_API="$BASE_URL/api/v1"
 MONGO_PATH="mongodb://myuser:mypassword@localhost:27017/ragify?authSource=admin"
 
 source .venv/bin/activate
@@ -19,25 +20,41 @@ case "$1" in
     ;;
 
 
-    # workspaces
-    workspaces)
-        curl -X GET $BASE_URL/api/workspaces \
+    # Auth
+    register)
+        curl -X POST $BASE_URL_API/auth/register \
         -H "Content-Type: application/json" \
         -d "{
-                \"user_id\": \"$2\"
+                \"name\": \"$2\",
+                \"email\": \"$2@email.com\",
+                \"password\": \"${2}@1234\"
             }"
     ;;
 
-    workspace)
-        curl -X POST $BASE_URL/api/workspaces \
+    login)
+        curl -X POST $BASE_URL_API/auth/login \
         -H "Content-Type: application/json" \
         -d "{
-                \"user_id\": \"$2\"
+                \"email\": \"$2@email.com\",
+                \"password\": \"${2}@1234\"
             }"
+    ;;
+
+
+    # workspaces
+    list)
+        curl -X GET $BASE_URL_API/workspaces/ \
+        -H "Authorization: Bearer $2"
+    ;;
+
+    create)
+        curl -X POST $BASE_URL_API/workspaces/ \
+        -H "Authorization: Bearer $2"
     ;;
 
     upload)
-        curl -X POST $BASE_URL/api/docs/upload \
+        curl -X POST $BASE_URL_API/docs/upload/ \
+        -H "Authorization: Bearer $2" \
         -H "Content-Type: application/json" \
         -d '{
                 "session_id": "123abc"
@@ -45,7 +62,8 @@ case "$1" in
     ;;
 
     query)
-        curl -X POST $BASE_URL/api/query \
+        curl -X POST $BASE_URL_API/query/ \
+        -H "Authorization: Bearer $2" \
         -H "Content-Type: application/json" \
         -d '{
                 "session_id": "123abc",

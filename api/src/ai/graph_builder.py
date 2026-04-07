@@ -6,7 +6,7 @@ from langgraph.graph import END, START
 from langgraph.graph.state import StateGraph
 
 from src.ai.llm import llm
-from src.ai.reAct_agent import agent
+from src.ai.reAct_agent import get_agent
 from src.ai.tools import doc_tool, routing_tool
 from src.config.settings import Config
 from src.types.evaluator import Evaluate
@@ -19,8 +19,8 @@ config = Config()
 
 def query_classifier(state: State):
     question = state.get('messages')[-1].content
-    retriever = get_retriever()
-    context = retriever.invoke(question)
+    workspace_id = state.get('workspace_id')
+    retriever = get_retriever(workspace_id)
     print("Docs received from Qdrant")
     print(context)
 
@@ -67,6 +67,8 @@ def retriever_node(state: State):
         dict: Updated messages with tool calls.
     """
     messages = state["latest_query"]
+    workspace_id = state.get('workspace_id')
+    agent = get_agent(workspace_id)
     result = agent.invoke({"input": messages})
 
     # Extract tool calls

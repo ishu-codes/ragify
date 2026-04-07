@@ -28,10 +28,10 @@ services:
     env_file:
       - ./api/.env
     volumes:
-      - ${MONGO_DATA_PATH}:/data/db
+      - ${MONGO_DATA_PATH:-./api/mongo_data_volume}:/data/db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-myuser}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-mypassword}
     ports:
       - "27017:27017"
 

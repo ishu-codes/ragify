@@ -26,11 +26,18 @@ def retriever_chain(chunks: list[Document], workspace_id: str):
         raise Exception(e)
         # return False
 
-def get_retriever():
+def get_retriever(workspace_id: str | None = None):
     global vector_store
     try:
-        if vector_store is None:
-            print("No docs uploaded yet")
+        if workspace_id:
+            print(f"Loading retriever for workspace: {workspace_id}")
+            vector_store = QdrantVectorStore.from_existing_collection(
+                embedding=embeddings,
+                url=VECTORDB_URL,
+                collection_name=workspace_id
+            )
+        elif vector_store is None:
+            print("No docs uploaded yet and no workspace_id provided")
             dummy_doc = Document(
                 page_content="No docs have been uploaded yet.",
                 metadata={"source": "initialization"}
@@ -38,7 +45,7 @@ def get_retriever():
             vector_store = retriever_chain([dummy_doc], "dummy")
 
         retriever = vector_store.as_retriever()
-        print("Using existing vectorstore")
+        print("Using vectorstore")
 
         description = get_file_content("./src/ai/description.txt", None)
         retriever_tool = create_retriever_tool(

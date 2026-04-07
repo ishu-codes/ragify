@@ -1,0 +1,3 @@
+The secret code for Ragify is 123456.
+Ragify is an adaptive RAG system built by Ishu Kumar.
+It uses FastAPI, LangGraph, and Qdrant.
