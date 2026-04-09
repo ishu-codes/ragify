@@ -1,5 +1,4 @@
-import WorkspaceLayout from "./Layout";
-// import Workspace from "./Workspace";
-import Workspaces from "./Workspaces";
+import AppSidebar from "./AppSidebar";
+import Navbar from "./Navbar";
 
-export { WorkspaceLayout, Workspaces };
+export { AppSidebar, Navbar };

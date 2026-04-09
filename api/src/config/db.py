@@ -12,7 +12,15 @@ uri = getenv("MONGODB_URI", "mongodb://localhost:27017/")
 client: AsyncMongoClient[Dict[str, Any]] = AsyncMongoClient(uri)
 db = client["ragify"]
 
-print("MongoDB connected successfully!")
+
+async def connect_to_mongodb() -> None:
+    await client.admin.command("ping")
+    print("MongoDB connected successfully!")
+
+
+async def close_mongodb_connection() -> None:
+    await client.close()
+
 
 # def get_collection_name(workspace_id: str):
 #     client.
