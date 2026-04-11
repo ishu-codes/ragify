@@ -10,7 +10,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from src.ai.llm import llm
 from src.ai.retriever import get_retriever
 from src.config.settings import Config
-from src.utils.files import get_file_content
+
+# from src.utils.files import get_file_content
 
 config = Config()
 

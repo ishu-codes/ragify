@@ -55,7 +55,7 @@ export default function SettingsPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 lg:p-8">
       <Tabs defaultValue="details" className="space-y-6">
         <TabsList className="h-auto flex-wrap justify-start rounded-2xl p-1">
           <TabsTrigger value="details">Details</TabsTrigger>
@@ -114,7 +114,11 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="flex justify-end">
-                <Button className="cursor-pointer" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+                <Button
+                  className="cursor-pointer"
+                  onClick={() => updateMutation.mutate()}
+                  disabled={updateMutation.isPending}
+                >
                   <Save />
                   {updateMutation.isPending ? "Saving..." : "Save changes"}
                 </Button>

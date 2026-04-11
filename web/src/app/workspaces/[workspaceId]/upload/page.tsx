@@ -133,7 +133,7 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 lg:p-8">
       <Card className="rounded-3xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-2xl">
@@ -177,7 +177,10 @@ export default function UploadPage() {
               <p className="text-sm font-medium">Ready to upload</p>
               <div className="grid gap-3 md:grid-cols-3">
                 {pendingFiles.map((file) => (
-                  <div key={`${file.name}-${file.size}`} className="rounded-2xl border border-border/60 bg-background/80 p-4">
+                  <div
+                    key={`${file.name}-${file.size}`}
+                    className="rounded-2xl border border-border/60 bg-background/80 p-4"
+                  >
                     <div className="flex items-start gap-3">
                       <div className="rounded-xl bg-primary/10 p-2">
                         <MaterialIcon kind={file.name.split(".").pop() ?? "file"} />
@@ -205,7 +208,11 @@ export default function UploadPage() {
                 ))}
               </div>
               <div className="flex justify-center">
-                <Button className="cursor-pointer" onClick={() => uploadMutation.mutate()} disabled={uploadMutation.isPending}>
+                <Button
+                  className="cursor-pointer"
+                  onClick={() => uploadMutation.mutate()}
+                  disabled={uploadMutation.isPending}
+                >
                   {uploadMutation.isPending ? "Uploading..." : "Upload files"}
                 </Button>
               </div>
@@ -221,7 +228,9 @@ export default function UploadPage() {
               {statusIcon(uploadStatus.status)}
               Upload processing
             </CardTitle>
-            <CardDescription>Files are uploaded. The server is parsing and indexing them in the background.</CardDescription>
+            <CardDescription>
+              Files are uploaded. The server is parsing and indexing them in the background.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-wrap items-center gap-3">

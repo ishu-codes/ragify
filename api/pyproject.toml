@@ -13,6 +13,7 @@ dependencies = [
     "langchain-ollama>=1.0.1",
     "langchain-openai>=1.1.12",
     "langchain-qdrant>=1.1.0",
+    "langchain-tavily>=0.2.17",
     "langgraph>=1.1.3",
     "markitdown[pdf]>=0.1.5",
     "pydotenv>=0.0.7",

@@ -11,6 +11,7 @@ import { useSession } from "@/hooks/useAuthSession";
 import { workspaceApi } from "@/lib/api";
 import { readWorkspaceSession } from "@/lib/workspace-session";
 import type { WorkspaceSession } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
 
 function formatTime(value: string) {
   return new Intl.DateTimeFormat(undefined, { timeStyle: "short" }).format(new Date(value));
@@ -37,7 +38,44 @@ export default function WorkspaceOverview() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 lg:p-8">
+      <Card className="rounded-3xl border-primary/10 bg-linear-to-r from-primary/10 via-background to-background">
+        <CardContent className="flex flex-col gap-6 p-6 lg:flex-row lg:items-end lg:justify-between lg:p-8">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Link href="/workspaces" className="hover:text-foreground">
+                Workspaces
+              </Link>
+              <span>/</span>
+              <span>{workspaceId}</span>
+              {/*<span>/</span>
+              <span>Overview</span>*/}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-semibold tracking-tight">{workspaceQuery.data?.name ?? "Workspace"}</h1>
+              </div>
+              <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+                {workspaceQuery.data?.description && workspaceQuery.data?.description}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {workspaceQuery.data?.tags.length ? (
+                  workspaceQuery.data.tags.map((tag) => (
+                    <Badge key={tag} variant="outline">
+                      {tag}
+                    </Badge>
+                  ))
+                ) : (
+                  <Badge variant="outline">No tags</Badge>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2"></div>
+        </CardContent>
+      </Card>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card className="rounded-3xl">
           <CardHeader className="space-y-1 pb-3">

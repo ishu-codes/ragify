@@ -15,6 +15,7 @@ from src.ai.graph_builder import builder
 from src.ai.retriever import retriever_chain
 from src.utils.files import ensure_dir, get_file_content
 from src.workspace.utils import ensure_md
+from src.workspace.vector_repository import create_vector_collection
 
 from .repository import (
     append_workspace_materials,
@@ -247,6 +248,9 @@ async def create_workspace(user_id: str):
         _invalid_userId()
 
     workspace = await create_new_workspace(user_id)
+    print(workspace)
+    if workspace:
+        create_vector_collection(workspace['_id'])
     return serialize_workspace(workspace)
 
 

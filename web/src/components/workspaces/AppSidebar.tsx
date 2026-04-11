@@ -28,7 +28,7 @@ export default function AppSidebar({ workspaceId }: AppSidebarProps) {
     ? [
         { name: "Overview", href: `/workspaces/${workspaceId}`, icon: LayoutDashboardIcon },
         { name: "Chat", href: `/workspaces/${workspaceId}/chat`, icon: MessageSquareIcon },
-        { name: "History", href: `/workspaces/${workspaceId}/history`, icon: HistoryIcon },
+        // { name: "History", href: `/workspaces/${workspaceId}/history`, icon: HistoryIcon },
         { name: "Upload", href: `/workspaces/${workspaceId}/upload`, icon: UploadIcon },
         { name: "Settings", href: `/workspaces/${workspaceId}/settings`, icon: SettingsIcon },
       ]

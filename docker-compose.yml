@@ -24,7 +24,7 @@ services:
   db:
     container_name: ragify-db
     image: mongo:8.2.3
-    # restart: unless-stopped
+    restart: unless-stopped
     env_file:
       - ./api/.env
     volumes:
