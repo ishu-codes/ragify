@@ -37,6 +37,7 @@ from .repository import (
 )
 from .serializer import (
     serialize_session,
+    serialize_session_messages,
     serialize_sessions,
     serialize_upload_status,
     serialize_workspace,
@@ -250,7 +251,7 @@ async def create_workspace(user_id: str):
     workspace = await create_new_workspace(user_id)
     print(workspace)
     if workspace:
-        create_vector_collection(workspace['_id'])
+        create_vector_collection(workspace["_id"])
     return serialize_workspace(workspace)
 
 
@@ -283,6 +284,16 @@ async def get_workspace_sessions(workspace_id: str, user_id: str):
     await _ensure_workspace_access(workspace_id, user_id)
     sessions = await get_sessions_by_workspace_id(workspace_id)
     return serialize_sessions(sessions)
+
+
+async def get_session_messages(workspace_id: str, session_id: str, user_id: str):
+    await _ensure_workspace_access(workspace_id, user_id)
+
+    session = await get_session_by_id(session_id)
+    if session is None or session["workspace_id"] != workspace_id:
+        raise HTTPException(status_code=404, detail="Session could not be found")
+
+    return serialize_session_messages(session)
 
 
 async def get_upload_status(workspace_id: str, status_id: str, user_id: str):

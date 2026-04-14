@@ -8,6 +8,7 @@ from src.config.response import success
 from .schemas import QueryBody, UpdateSessionBody, UpdateWorkspaceBody
 from .service import (
     create_workspace,
+    get_session_messages,
     get_upload_status,
     get_workspace,
     get_workspace_sessions,
@@ -96,6 +97,16 @@ async def workspace_query(
 async def workspace_sessions(workspace_id: str, request: Request):
     result = await get_workspace_sessions(
         workspace_id, authenticated_user(request)["id"]
+    )
+    return success(result)
+
+
+@router.get("/{workspace_id}/sessions/{session_id}/messages")
+async def workspace_session_messages(
+    workspace_id: str, session_id: str, request: Request
+):
+    result = await get_session_messages(
+        workspace_id, session_id, authenticated_user(request)["id"]
     )
     return success(result)
 

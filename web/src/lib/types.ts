@@ -102,3 +102,11 @@ export type WorkspaceSession = {
   createdAt: string | null;
   messages: WorkspaceMessage[];
 };
+
+export type SessionMessagesResponse = {
+  id: string;
+  workspace_id: string;
+  name: string;
+  created_at: string;
+  messages: WorkspaceMessage[];
+};

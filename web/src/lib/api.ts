@@ -1,4 +1,4 @@
-import type { AuthResponse, QueryResponse, SessionResponse, UploadResponse, Workspace, WorkspaceSessionSummary, WorkspaceUploadStatus } from "@/lib/types";
+import type { AuthResponse, QueryResponse, SessionMessagesResponse, SessionResponse, UploadResponse, Workspace, WorkspaceSessionSummary, WorkspaceUploadStatus } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION || "v1";
@@ -88,6 +88,8 @@ export const workspaceApi = {
     request<{ id: string }>(`workspaces/${workspaceId}/sessions/${sessionId}`, { method: "DELETE", token }),
   deleteAllSessions: (token: string, workspaceId: string) =>
     request<{ workspace_id: string }>(`workspaces/${workspaceId}/sessions`, { method: "DELETE", token }),
+  sessionMessages: (token: string, workspaceId: string, sessionId: string) =>
+    request<SessionMessagesResponse>(`workspaces/${workspaceId}/sessions/${sessionId}/messages`, { token }),
 };
 
 export { API_URL };

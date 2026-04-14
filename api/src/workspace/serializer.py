@@ -73,3 +73,27 @@ def serialize_session(session: dict) -> dict:
 
 def serialize_sessions(sessions: list[dict]) -> list[dict]:
     return [serialize_session(session) for session in sessions]
+
+
+def serialize_session_message(message: dict, index: int) -> dict:
+    return {
+        "id": f"msg-{index}",
+        "role": "assistant" if message.get("type") == "ai" else "user",
+        "content": message.get("data", {}).get("content", ""),
+        "createdAt": message.get("data", {})
+        .get("additional_kwargs", {})
+        .get("created_at", ""),
+    }
+
+
+def serialize_session_messages(session: dict) -> dict:
+    messages = session.get("messages", [])
+    return {
+        "id": str(session["_id"]),
+        "workspace_id": session["workspace_id"],
+        "name": session.get("name", "Untitled Session"),
+        "created_at": session["created_at"].isoformat(),
+        "messages": [
+            serialize_session_message(msg, i) for i, msg in enumerate(messages)
+        ],
+    }
