@@ -4,8 +4,8 @@ set -e
 
 case "$1" in
     start)
-        docker compose \
-            --env-file=api/.env \
+        cd infra/docker && docker-compose \
+            --env-file=../.env \
             up -d
     ;;
 

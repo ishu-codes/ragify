@@ -1,0 +1,7 @@
+embedding_model: bge-small
+top_k: 5
+reranker: bge-reranker-v2-m3
+llm: ollama
+use_llm_judge: true
+experiment_name: rerank
+save_results: true

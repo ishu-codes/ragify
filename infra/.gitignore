@@ -1,0 +1,6 @@
+
+# Database volumes
+volumes/
+
+# Environment files
+*.env

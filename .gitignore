@@ -1,4 +1,15 @@
 
-# Databases
-mongo_data_volume/
-qdrant_db/
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.ruff_cache/
+
+# Virtual environments
+.venv
+
+# Environment files
+*.env

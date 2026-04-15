@@ -1,0 +1,8 @@
+[
+  {
+    "id": "q1",
+    "query": "How does diffusion improve sampling efficiency?",
+    "relevant_docs": ["paper_12"],
+    "expected_points": ["noise scheduling", "reduced steps"]
+  }
+]
