@@ -21,3 +21,5 @@ dependencies = [
     "pymongo[srv]>=4.16.0",
     "qdrant-client>=1.17.1",
 ]
+[tool.setuptools.packages.find]
+where = ["src"]
