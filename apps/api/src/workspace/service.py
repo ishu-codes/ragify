@@ -10,12 +10,9 @@ from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, HumanMessage, messages_from_dict
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from src.ai.config import MAX_TOKENS, OVERLAP
-from src.ai.graph_builder import builder
-from src.ai.retriever import retriever_chain
-from src.utils.files import ensure_dir, get_file_content
-from src.workspace.utils import ensure_md
-from src.workspace.vector_repository import create_vector_collection
+from src.ragify.utils import MAX_TOKENS, OVERLAP
+from src.ragify.generation import builder
+from src.ragify.retrieval import vector_store_manager, get_retriever
 
 from .repository import (
     append_workspace_materials,
@@ -203,7 +200,7 @@ async def _process_uploaded_files(status_id: str, workspace_id: str):
         await _append_upload_log(
             status_id, f"Indexing {len(all_chunks)} chunks into vector database"
         )
-        retriever_chain(all_chunks, workspace_id)
+        vector_store_manager.get_or_create(workspace_id, documents=all_chunks)
         await append_workspace_materials(workspace_id, successful_materials)
         await update_upload_status(
             status_id,
@@ -251,7 +248,7 @@ async def create_workspace(user_id: str):
     workspace = await create_new_workspace(user_id)
     print(workspace)
     if workspace:
-        create_vector_collection(workspace["_id"])
+        vector_store_manager.create_collection(workspace["_id"])
     return serialize_workspace(workspace)
 
 

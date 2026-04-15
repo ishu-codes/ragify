@@ -1,15 +1,13 @@
-from api.src.ai.embeddings import encode
-from api.src.ai.llm import llm
-from api.src.ai.reranker import rerank_docs
-from api.src.ai.retriever import vector_store
-from api.src.utils.json import load_json_file
-from benchmarking.src.evaluator import Evaluator, RAGRetriever
-from benchmarking.src.utils.config import load_config
-from benchmarking.src.utils.logger import create_run_id, save_summary
+from src.ragify.retrieval import embeddings, vector_store_manager
+from src.ragify.reranking import reranker
+from src.ragify.generation import llm
 
-config = load_config("configs/rerank.yaml")
 
-retriever = RAGRetriever(encode, vector_store, reranker=rerank_docs)
+def get_vector_store(collection_name: str = "benchmark"):
+    return vector_store_manager.get_or_create(collection_name)
+
+
+retriever = RAGRetriever(embeddings.encode, get_vector_store, reranker=reranker.rerank)
 
 evaluator = Evaluator(
     retriever,
@@ -21,6 +19,7 @@ queries = load_json_file("./data/queries.json")
 
 # results = evaluator.run(queries, k=5)
 # print(results)
+
 
 def main():
     run_id = create_run_id(config.experiment_name)

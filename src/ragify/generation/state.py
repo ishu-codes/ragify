@@ -1,6 +1,5 @@
-""" State model for graph-based RAG system"""
-
-from typing import Annotated, Optional, TypedDict
+from typing import Annotated, Optional
+from typing_extensions import TypedDict
 
 from langchain_core.messages import BaseMessage
 from langgraph.graph import add_messages
