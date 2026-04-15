@@ -40,7 +40,7 @@ services:
 
   vector_db:
     container_name: ragify_qdrant
-    image: qdrant/qdrant:1.17
+    image: qdrant/qdrant:v1.17
     ports:
       - "${QDRANT_HTTP_PORT}:6333"
       - "${QDRANT_GRPC_PORT}:6334"

@@ -6,7 +6,17 @@ BASE_URL='http://localhost:8000'
 BASE_URL_API="$BASE_URL/api/v1"
 MONGO_PATH="mongodb://myuser:mypassword@localhost:27017/ragify?authSource=admin"
 
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+
+if [ ! -d ".venv" ]; then
+    uv venv .venv
+fi
+
 source .venv/bin/activate
+
+uv pip install -q pyyaml pydantic pydotenv langchain-core langchain langchain-ollama langchain-qdrant langgraph langchain-tavily transformers torch qdrant-client fastapi uvicorn "fastapi[standard]" bcrypt pymongo markitdown python-jose passlib pyjwt langchain-text-splitters 2>/dev/null
+
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 case "$1" in
     dev)

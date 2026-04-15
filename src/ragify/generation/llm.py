@@ -7,6 +7,7 @@ load_dotenv()
 
 os.environ["OPENAI_API_KEY"] = os.getenv("LLM_API_KEY", "")
 
+
 class LLMProvider(str, Enum):
     OLLAMA = "ollama"
     ANTHROPIC = "anthropic"
@@ -29,10 +30,12 @@ class LLM:
         match self.provider:
             case LLMProvider.OLLAMA:
                 from langchain_ollama import ChatOllama
+
                 return ChatOllama(model=self.model_name)
 
             case LLMProvider.ANTHROPIC:
                 from langchain_anthropic import ChatAnthropic
+
                 return ChatAnthropic(
                     model_name=self.model_name,
                     base_url=base_url,
@@ -41,15 +44,14 @@ class LLM:
                     stop=[],
                 )
 
-            # default OpenAI provider
             case _:
                 from langchain_openai import ChatOpenAI
+
                 return ChatOpenAI(
                     model=self.model_name,
                     base_url=base_url,
                     api_key=os.getenv("LLM_API_KEY", ""),
                 )
-
 
     @property
     def client(self):
@@ -63,6 +65,9 @@ class LLM:
 
     def with_structured_output(self, schema):
         return self._client.with_structured_output(schema)
+
+    def __getattr__(self, name):
+        return getattr(self._client, name)
 
 
 llm = LLM()
