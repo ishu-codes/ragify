@@ -18,7 +18,7 @@ class Config:
     reranker: Optional[str] = None
 
     # llm
-    llm: str = "ollama"
+    llm: str = "openai"
 
     # evaluation
     use_llm_judge: bool = False

@@ -1,7 +1,8 @@
 embedding_model: bge-small
 top_k: 5
-reranker: bge-reranker-v2-m3
-llm: ollama
+initial_k: 25
+reranker: BAAI/bge-reranker-v2-m3
+llm: openai
 use_llm_judge: true
 experiment_name: rerank
 save_results: true

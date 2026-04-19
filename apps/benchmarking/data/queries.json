@@ -1,8 +1,62 @@
 [
   {
     "id": "q1",
-    "query": "How does diffusion improve sampling efficiency?",
-    "relevant_docs": ["paper_12"],
-    "expected_points": ["noise scheduling", "reduced steps"]
+    "query": "What are the key methods for reranking, retrieval?",
+    "relevant_docs": ["2604.11043v1"],
+    "expected_points": ["reranking", "retrieval", "retriever"]
+  },
+  {
+    "id": "q2",
+    "query": "What are the key methods for safety, ai safety?",
+    "relevant_docs": ["2604.11065v1"],
+    "expected_points": ["safety", "ai safety"]
+  },
+  {
+    "id": "q3",
+    "query": "What are the key methods for safety, ai safety?",
+    "relevant_docs": ["2604.11070v1"],
+    "expected_points": ["safety", "ai safety"]
+  },
+  {
+    "id": "q4",
+    "query": "What are the key methods for llm, language model?",
+    "relevant_docs": ["2604.11072v1"],
+    "expected_points": ["llm", "language model", "agent"]
+  },
+  {
+    "id": "q6",
+    "query": "What are the key methods for agent, agents?",
+    "relevant_docs": ["2604.11088v1"],
+    "expected_points": ["agent", "agents"]
+  },
+  {
+    "id": "q8",
+    "query": "What are the key methods for llm, language model?",
+    "relevant_docs": ["2604.11120v1"],
+    "expected_points": ["llm", "language model", "safety"]
+  },
+  {
+    "id": "q11",
+    "query": "What are the key methods for llm, language model?",
+    "relevant_docs": ["2604.11137v1"],
+    "expected_points": ["llm", "language model", "safety"]
+  },
+  {
+    "id": "q12",
+    "query": "What are the key methods for llm, language model?",
+    "relevant_docs": ["2604.11154v1"],
+    "expected_points": ["llm", "language model"]
+  },
+  {
+    "id": "q14",
+    "query": "What are the key methods for llm, language model?",
+    "relevant_docs": ["2604.11259v1"],
+    "expected_points": ["llm", "language model", "agent"]
+  },
+  {
+    "id": "q16",
+    "query": "What are the key methods for llm, language model?",
+    "relevant_docs": ["2604.11287v1"],
+    "expected_points": ["llm", "language model", "safety"]
   }
 ]

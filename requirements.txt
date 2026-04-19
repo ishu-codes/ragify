@@ -30,6 +30,8 @@ flatbuffers==25.12.19
 frozenlist==1.8.0
 future==1.0.0
 gevent==25.9.1
+grobid-client-python==0.1.4
+grobid2json==0.0.1
 greenlet==3.3.2
 grpcio==1.78.0
 h11==0.16.0
@@ -97,6 +99,7 @@ pysocks==1.7.1
 python-dotenv==1.2.2
 python-multipart==0.0.22
 pyyaml==6.0.3
+sentence-transformers==3.3.1
 qdrant-client==1.17.1
 regex==2026.3.32
 requests==2.33.1

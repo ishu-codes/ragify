@@ -1,7 +1,7 @@
-from langchain_qdrant import QdrantVectorStore
 from langchain_core.documents import Document
+from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams
+from qdrant_client.models import Distance, PointStruct, VectorParams
 
 from src.ragify.retrieval.embedder import embeddings
 from src.ragify.utils.config import VECTOR_SIZE, VECTORDB_URL
@@ -59,6 +59,31 @@ class VectorStoreManager:
 
     def get(self, collection_name: str) -> QdrantVectorStore | None:
         return self._stores.get(collection_name)
+
+    @property
+    def client(self) -> QdrantClient:
+        return self._client
+
+    def delete_collection(self, collection_name: str) -> bool:
+        return self._client.delete_collection(collection_name)
+
+    def insert_documents(
+        self,
+        collection_name: str,
+        documents: list[Document],
+    ) -> None:
+        store = self.get_or_create(collection_name)
+        store.add_documents(documents)
+
+    def insert_points(
+        self,
+        collection_name: str,
+        points: list[PointStruct],
+    ) -> None:
+        self._client.upsert(
+            collection_name=collection_name,
+            points=points,
+        )
 
 
 vector_store_manager = VectorStoreManager()

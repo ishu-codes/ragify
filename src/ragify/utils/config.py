@@ -4,11 +4,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-EMBED_MODEL = getenv("EMBED_MODEL", "qllama/bge-small-en-v1.5")
-RERANKER_MODEL = getenv("RERANKER_MODEL", "bona/bge-reranker-v2-m3:latest")
+EMBED_MODEL = getenv("EMBED_MODEL", "qllama/bge-small-en-v1.5:latest")
+RERANKER_MODEL = getenv("RERANKER_MODEL", "BAAI/bge-reranker-base")
 
-LLM_MODEL = getenv("LLM_MODEL", "claude-sonnet-4-6")
-LLM_URL = getenv("LLM_URL", "http://localhost:8080/v1")
+LLM_MODEL = getenv("LLM_MODEL", "llama3.2")
+LLM_URL = getenv("LLM_URL", "http://localhost:11434")
 LLM_API_KEY = getenv("LLM_API_KEY", "")
 
 VECTORDB_URL = getenv("VECTORDB_URL", "http://localhost:6333/")

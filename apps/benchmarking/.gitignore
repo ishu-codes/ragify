@@ -1,2 +1,9 @@
 # Documents
-data/papers/
+data/papers
+data/logs
+
+# Unnecessary files
+first_doc.md
+result.md
+tei_to_md.py
+test.py

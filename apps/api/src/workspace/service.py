@@ -8,11 +8,11 @@ from bson.errors import InvalidId
 from fastapi import HTTPException, UploadFile
 from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, HumanMessage, messages_from_dict
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from src.ragify.utils import MAX_TOKENS, OVERLAP
 from src.ragify.generation import builder
-from src.ragify.retrieval import vector_store_manager, get_retriever
+from src.ragify.ingestion import ingester
+from src.ragify.retrieval import get_retriever, vector_store_manager
+from src.ragify.transcoder import transcoder
 
 from .repository import (
     append_workspace_materials,
@@ -118,10 +118,6 @@ async def _process_uploaded_files(status_id: str, workspace_id: str):
     if status is None:
         return
 
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=MAX_TOKENS,
-        chunk_overlap=OVERLAP,
-    )
     all_chunks: list[Document] = []
     successful_materials: list[dict] = []
 
@@ -152,8 +148,7 @@ async def _process_uploaded_files(status_id: str, workspace_id: str):
                     f"Converting {file_kind or 'file'} into markdown for {file_name}",
                 )
 
-            content_path = ensure_md(file_path)
-            content = get_file_content(content_path)
+            content = transcoder.convert_to_markdown(file_path)
             if not content:
                 await _set_file_status(
                     status_id, file["id"], "failed", "No valid content extracted"
@@ -163,7 +158,7 @@ async def _process_uploaded_files(status_id: str, workspace_id: str):
                 )
                 continue
 
-            chunks = text_splitter.split_text(content)
+            chunks = ingester.split_text(content)
             for i, chunk in enumerate(chunks):
                 all_chunks.append(
                     Document(
@@ -200,7 +195,7 @@ async def _process_uploaded_files(status_id: str, workspace_id: str):
         await _append_upload_log(
             status_id, f"Indexing {len(all_chunks)} chunks into vector database"
         )
-        vector_store_manager.get_or_create(workspace_id, documents=all_chunks)
+        ingester.index_documents(all_chunks, workspace_id)
         await append_workspace_materials(workspace_id, successful_materials)
         await update_upload_status(
             status_id,
