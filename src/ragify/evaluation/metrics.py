@@ -18,8 +18,10 @@ class EvaluationResult:
     chunk_relevance: float
     generation_score: float | None
     latency_ms: float
-    retrieved_docs: list[str]
-    answer: str | None
+    retrieval_latency_ms: float | None = None
+    rerank_latency_ms: float | None = None
+    retrieved_docs: list[str] = None
+    answer: str | None = None
 
 
 @dataclass
@@ -30,8 +32,10 @@ class BenchmarkResult:
     generation_score: float | None
     avg_latency_ms: float
     p95_latency_ms: float
-    total_queries: int
-    results: list[EvaluationResult]
+    avg_retrieval_latency_ms: float | None = None
+    avg_rerank_latency_ms: float | None = None
+    total_queries: int = 0
+    results: list["EvaluationResult"] = None
 
 
 def compute_recall_at_k(retrieved: list[str], relevant: list[str], k: int) -> float:

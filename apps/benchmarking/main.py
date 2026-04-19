@@ -1,10 +1,13 @@
 import json
+import logging
 import os
 import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
@@ -99,6 +102,8 @@ def run_baseline(
         "generation_score": result.generation_score,
         "avg_latency_ms": result.avg_latency_ms,
         "p95_latency_ms": result.p95_latency_ms,
+        "avg_retrieval_latency_ms": result.avg_retrieval_latency_ms,
+        "avg_rerank_latency_ms": result.avg_rerank_latency_ms,
         "total_queries": result.total_queries,
     }
 
@@ -106,14 +111,16 @@ def run_baseline(
 def run_with_reranker(
     config: dict[str, Any], queries: list[dict[str, Any]]
 ) -> dict[str, Any]:
-    from src.ragify.reranking import reranker
+    from src.ragify.reranking.reranker import get_reranker
 
     initial_k = config.get("initial_k", 25)
+    reranker_backend = config.get("reranker_backend", "ollama")
+    reranker_instance = get_reranker(backend=reranker_backend)
 
     engine = RetrievalEngine(
         embed_fn=embeddings.encode,
         vector_store_fn=get_vector_store,
-        reranker=reranker.rerank,
+        reranker=reranker_instance.rerank,
     )
 
     evaluator = RAGEvaluator(
@@ -136,6 +143,8 @@ def run_with_reranker(
         "generation_score": result.generation_score,
         "avg_latency_ms": result.avg_latency_ms,
         "p95_latency_ms": result.p95_latency_ms,
+        "avg_retrieval_latency_ms": result.avg_retrieval_latency_ms,
+        "avg_rerank_latency_ms": result.avg_rerank_latency_ms,
         "total_queries": result.total_queries,
     }
 
@@ -168,12 +177,16 @@ def benchmark():
     metrics = [
         ("Doc Recall@K", "doc_recall_at_k"),
         ("Chunk Relevance@K", "chunk_relevance_at_k"),
+        ("Avg Retrieval (ms)", "avg_retrieval_latency_ms"),
+        ("Avg Rerank (ms)", "avg_rerank_latency_ms"),
         ("Avg Latency (ms)", "avg_latency_ms"),
     ]
 
     for name, key in metrics:
         base = baseline_result.get(key, 0) or 0
         rerank = rerank_result.get(key, 0) or 0
+        if base == 0 and rerank == 0:
+            continue
         delta = rerank - base
         delta_str = f"+{delta:.4f}" if delta >= 0 else f"{delta:.4f}"
         print(f"{name:<20} {base:<12.4f} {rerank:<12.4f} {delta_str:<12}")

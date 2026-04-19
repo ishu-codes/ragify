@@ -27,7 +27,9 @@ class RetrievalEngine:
 
     def retrieve(
         self, query: str, k: int = 5, initial_k: int | None = None
-    ) -> list[Any]:
+    ) -> tuple[list[Any], float, float]:
+        start_total = time.perf_counter()
+
         q_vec = self.embed_fn(query)
         vector_store = self.vector_store_fn()
 
@@ -43,10 +45,17 @@ class RetrievalEngine:
             else:
                 chunks.append(item)
 
-        if self.reranker:
-            chunks = self.reranker(query, chunks, top_k=k)
+        retrieval_latency_ms = (time.perf_counter() - start_total) * 1000
 
-        return chunks[:k]
+        rerank_latency_ms = 0.0
+        if self.reranker:
+            start_rerank = time.perf_counter()
+            chunks = self.reranker(query, chunks, top_k=k)
+            rerank_latency_ms = (time.perf_counter() - start_rerank) * 1000
+
+        total_latency_ms = (time.perf_counter() - start_total) * 1000
+
+        return chunks[:k], total_latency_ms, rerank_latency_ms, retrieval_latency_ms
 
 
 class RAGEvaluator:
@@ -74,9 +83,9 @@ class RAGEvaluator:
         k: int = 5,
         initial_k: int | None = None,
     ) -> EvaluationResult:
-        start = time.perf_counter()
-        chunks = self.retrieval_engine.retrieve(query, k=k, initial_k=initial_k)
-        latency_ms = (time.perf_counter() - start) * 1000
+        chunks, latency_ms, rerank_latency_ms, retrieval_latency_ms = self.retrieval_engine.retrieve(
+            query, k=k, initial_k=initial_k
+        )
 
         retrieved_doc_ids = self._extract_doc_ids(chunks)
         retrieved_texts = self._extract_chunk_texts(chunks)
@@ -109,6 +118,9 @@ class RAGEvaluator:
             chunk_relevance=chunk_relevance,
             generation_score=generation_score,
             latency_ms=latency_ms,
+            # retrieval_latency_ms=latency_ms - rerank_latency_ms,
+            retrieval_latency_ms=retrieval_latency_ms,
+            rerank_latency_ms=rerank_latency_ms,
             retrieved_docs=retrieved_doc_ids,
             answer=answer,
         )
@@ -125,6 +137,8 @@ class RAGEvaluator:
         chunk_relevances = []
         generation_scores = []
         latencies = []
+        retrieval_latencies = []
+        rerank_latencies = []
 
         for q in queries:
             result = self.evaluate_query(
@@ -140,6 +154,10 @@ class RAGEvaluator:
             doc_recalls.append(result.doc_recall)
             chunk_relevances.append(result.chunk_relevance)
             latencies.append(result.latency_ms)
+            if result.retrieval_latency_ms is not None:
+                retrieval_latencies.append(result.retrieval_latency_ms)
+            if result.rerank_latency_ms is not None:
+                rerank_latencies.append(result.rerank_latency_ms)
 
             if result.generation_score is not None:
                 generation_scores.append(result.generation_score)
@@ -159,6 +177,12 @@ class RAGEvaluator:
             p95_latency_ms=sorted(latencies)[int(len(latencies) * 0.95)]
             if latencies
             else 0.0,
+            avg_retrieval_latency_ms=statistics.mean(retrieval_latencies)
+            if retrieval_latencies
+            else None,
+            avg_rerank_latency_ms=statistics.mean(rerank_latencies)
+            if rerank_latencies
+            else None,
             total_queries=len(queries),
             results=results,
         )
