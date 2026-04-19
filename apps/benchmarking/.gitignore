@@ -6,4 +6,4 @@ data/logs
 first_doc.md
 result.md
 tei_to_md.py
-test.py
+test*.py
