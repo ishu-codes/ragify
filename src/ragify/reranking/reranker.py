@@ -1,8 +1,8 @@
+import io
 import logging
 import os
-import io
-from typing import Sequence
 from contextlib import redirect_stderr
+from typing import Sequence
 
 from langchain_core.documents import Document
 
@@ -72,7 +72,7 @@ class Reranker:
             return list(docs)[:top_k]
 
         if self._model is None:
-            print(f"Warning: Reranker model not loaded, skipping rerank")
+            print("Warning: Reranker model not loaded, skipping rerank")
             return list(docs)[:top_k]
 
         return self._rerank_transformers(query, docs, top_k)
@@ -107,9 +107,7 @@ def get_reranker(backend: str | None = None, silent: bool = False):
     if backend is None:
         backend = RERANKER_BACKEND
 
-    if reranker_instance is None:
-        reranker_instance = Reranker(backend=backend, silent=silent)
-    elif reranker_instance.backend != backend:
+    if reranker_instance is None or reranker_instance.backend != backend:
         reranker_instance = Reranker(backend=backend, silent=silent)
 
     return reranker_instance

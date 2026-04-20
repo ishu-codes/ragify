@@ -9,10 +9,10 @@ from fastapi import HTTPException, UploadFile
 from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, HumanMessage, messages_from_dict
 
+from apps.api.src.utils.files import ensure_dir
 from src.ragify.generation import builder
-from src.ragify.ingestion import ingester
+from src.ragify.ingestion import ingestion, transcoder
 from src.ragify.retrieval import get_retriever, vector_store_manager
-from src.ragify.transcoder import transcoder
 
 from .repository import (
     append_workspace_materials,
