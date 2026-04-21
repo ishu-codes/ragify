@@ -50,5 +50,17 @@ services:
 
     command: ["./qdrant", "--config-path", "/qdrant/config/config.yaml"]
 
+  grobid:
+    container_name: ragify-grobid
+    image: grobid/grobid:0.9.0-crf
+    ports:
+      - "${GROBID_PORT:-8070}:8070"
+    ulimits:
+      core:
+        soft: 0
+        hard: 0
+    init: true
+    restart: unless-stopped
+
 volumes:
   data:
