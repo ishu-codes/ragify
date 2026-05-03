@@ -2,9 +2,8 @@ from typing import List
 
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 
-from src.auth.utils import authenticated_user, require_auth
-from src.config.response import success
-
+from ..auth.utils import authenticated_user, require_auth
+from ..config.response import success
 from .schemas import QueryBody, UpdateSessionBody, UpdateWorkspaceBody
 from .service import (
     create_workspace,

@@ -1,3 +1,4 @@
+import sys
 from contextlib import asynccontextmanager
 from os import getenv
 from pathlib import Path
@@ -6,10 +7,12 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.auth.controller import router as auth_router
-from src.config.db import close_mongodb_connection, connect_to_mongodb
-from src.config.response import failure
-from src.workspace.controller import router as workspace_router
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+from apps.api.src.auth.controller import router as auth_router
+from apps.api.src.config.db import close_mongodb_connection, connect_to_mongodb
+from apps.api.src.config.response import failure
+from apps.api.src.workspace.controller import router as workspace_router
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 

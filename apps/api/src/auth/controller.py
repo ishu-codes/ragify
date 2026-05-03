@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, Request
 
-from .utils import authenticated_user, require_auth
-from src.config.response import success
-
+from ..config.response import success
 from .schemas import LoginBody, RegisterBody
 from .service import login_user, register_user
+from .utils import authenticated_user, require_auth
 
 router = APIRouter()
 

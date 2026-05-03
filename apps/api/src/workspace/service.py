@@ -1,4 +1,5 @@
 import asyncio
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import List
@@ -9,10 +10,12 @@ from fastapi import HTTPException, UploadFile
 from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, HumanMessage, messages_from_dict
 
-from apps.api.src.utils.files import ensure_dir
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent.parent))
+
 from src.ragify.generation import builder
 from src.ragify.ingestion import ingestion, transcoder
 from src.ragify.retrieval import get_retriever, vector_store_manager
+from src.utils.files import ensure_dir
 
 from .repository import (
     append_workspace_materials,

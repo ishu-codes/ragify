@@ -11,7 +11,7 @@ case "$1" in
 
     stop)
         docker compose \
-            --env-file=api/.env \
+            --env-file=.env \
             down
     ;;
 

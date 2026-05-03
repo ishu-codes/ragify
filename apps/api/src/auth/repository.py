@@ -1,7 +1,11 @@
+# import sys
+# from pathlib import Path
+
 from bson import ObjectId
 from bson.errors import InvalidId
 
-from src.config.db import db
+# sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent.parent))
+from ..config.db import db
 
 
 async def find_user_by_id(user_id: str):

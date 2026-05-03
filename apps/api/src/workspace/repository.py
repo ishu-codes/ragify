@@ -5,7 +5,7 @@ from bson import ObjectId
 from langchain_core.messages import BaseMessage
 from langchain_core.messages.base import message_to_dict
 
-from src.config.db import db
+from ..config.db import db
 
 # ----- Workspace -----
 
