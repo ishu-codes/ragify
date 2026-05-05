@@ -1,4 +1,7 @@
 
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.prompts import PromptTemplate
+from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
 
 from src.ragify.utils.config import (
@@ -6,6 +9,7 @@ from src.ragify.utils.config import (
     CLASSIFICATION_MODEL,
     CLASSIFICATION_URL,
 )
+from src.ragify.generation.schema import RouteIdentifier
 
 
 class ClassificationModel:
@@ -22,7 +26,18 @@ class ClassificationModel:
         return self._client
 
     def classify(self, schema):
-        return self._client.with_structured_output(schema)
-        # return self._client
+        # For models that don't support structured output, use JSON mode
+        try:
+            return self._client.with_structured_output(schema)
+        except Exception:
+            # Fallback: use JSON output parser
+            prompt = PromptTemplate(
+                template="Classify the query. Available routes: index, general, web. Query: {question} Context: {context}",
+                input_variables=["question", "context"],
+            )
+            parser = JsonOutputParser(pydantic_object=schema)
+            return prompt | self._client.bind(response_format={"type": "json_object"}) | parser
+
 
 classification_model = ClassificationModel()
+

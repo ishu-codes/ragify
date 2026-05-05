@@ -40,6 +40,15 @@ class VectorStoreManager:
         if collection_name in self._stores:
             return self._stores[collection_name]
 
+        # Check if collection exists on the server
+        collection_exists = False
+        try:
+            self._client.get_collection(collection_name=collection_name)
+            collection_exists = True
+        except Exception:
+            # Collection doesn't exist
+            collection_exists = False
+
         if documents:
             store = QdrantVectorStore.from_documents(
                 documents=documents,
@@ -47,7 +56,16 @@ class VectorStoreManager:
                 url=self.url,
                 collection_name=collection_name,
             )
+        elif collection_exists:
+            # Use existing collection from server
+            store = QdrantVectorStore.from_existing_collection(
+                embedding=embeddings.client,
+                url=self.url,
+                collection_name=collection_name,
+            )
         else:
+            # Create new empty collection
+            self.create_collection(collection_name)
             store = QdrantVectorStore.from_existing_collection(
                 embedding=embeddings.client,
                 url=self.url,

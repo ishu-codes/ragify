@@ -7,10 +7,11 @@ from src.ragify.generation.prompts import prompts
 from src.ragify.generation.schema import Evaluate, RouteIdentifier, VerificationResult
 
 
-def route_query(state: dict) -> Literal["retriever", "general_llm", "web_search"]:
+def route_query(state: dict) -> Literal["evaluator", "general_llm", "web_search"]:
     route = state.get("route", "general")
     if route == "index":
-        return "retriever"
+        # return "retriever"
+        return "evaluator"
     elif route == "general":
         return "general_llm"
     return "web_search"

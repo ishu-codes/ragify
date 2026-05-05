@@ -26,7 +26,7 @@ def query_classifier(state: State):
     print(colorize(f"\n\n\nQuestion: {question}", "RED"))
 
     retriever = get_retriever(workspace_id)
-    context = retriever.invoke(question)
+    context = retriever.invoke({"query": question})
     print(colorize(f"\ncontext: \n{context}", "CYAN"))
 
 
@@ -51,6 +51,7 @@ def query_classifier(state: State):
             "messages": state["messages"],
             "route": route,
             "latest_query": question,
+            "context": [context],
         }
 
     except Exception as e:
@@ -63,8 +64,8 @@ def query_classifier(state: State):
 def general_llm(state: State):
     result = llm.invoke(state["messages"])
     print("inside general llm")
-    print(result)
-    return {"messages": result}
+    print(colorize(f"General LLM result: {result}", "GREEN"))
+    return {"messages": [result]}
 
 
 def retriever_node(state: State):
@@ -75,35 +76,53 @@ def retriever_node(state: State):
     print(colorize(f"latest_query: {messages}", "CYAN"))
 
     agent = get_agent(workspace_id)
-    result = agent.invoke(messages)
+    result = agent.invoke({"input": messages})
 
     print(colorize(f"Retriever result: {result}", "CYAN"))
 
-    intermediate_steps = result.get("intermediate_steps", [])
+    output = result.get("messages", "")[-1]
+    if isinstance(output, AIMessage):
+        output = output.content
+
+    intermediate_steps = result.get("messages", [])
     tool_calls = []
     if intermediate_steps:
         for action, tool_result in intermediate_steps:
             tool_calls.append({"tool": action.tool, "input": action.tool_input})
 
     new_message = AIMessage(
-        content=result.get("output", ""), additional_kwargs={"tool_calls": tool_calls}
+        content=output, additional_kwargs={"tool_calls": tool_calls}
     )
-    print(f"retriever_node result: {new_message}")
+    print(colorize(f"retriever_node intermediate result: {new_message}", "CYAN"))
+    print(colorize(f"retriever_node final result: {output}", "GREEN"))
 
-    return {"messages": [new_message]}
+    return {"messages": [new_message], "context": [output]}
 
 
 def evaluator(state: State):
+    context = state.get('context', [])
+
     grading_prompt = PromptTemplate(
         template=prompts.grading_prompt,
         input_variables=["question", "context"],
     )
-    context = state.get("messages", [{}])[-1].content
+    # messages = state.get("messages", [{}])
+    # last_msg = messages[-1]
+    # Handle both dict and AIMessage/Message objects
+    # if hasattr(last_msg, 'content'):
+    #     context = last_msg.content
+    # elif isinstance(last_msg, dict):
+    #     context = last_msg.get('content', '')
+    # else:
+    #     context = str(last_msg)
+
     question = state.get("latest_query", "")
+
+    print(colorize(f"Context for evaluator: {context}", "RED"))
 
     llm_with_grade = llm.with_structured_output(Evaluate)
     chain_graded = grading_prompt | llm_with_grade
-    result = chain_graded.invoke({"question": question, "context": context})
+    result = chain_graded.invoke({"question": question, "context": str(context)})
 
     print(colorize(f"\n\nRetrival evaluator: {result}", "GREEN"))
     return {"messages": state["messages"], "binary_score": result.binary_score}
@@ -135,15 +154,27 @@ def web_search(state: State):
         for result in results
     ])
 
-    return {"messages": [{"role": "assistant", "content": websearch_result}]}
+    return {"messages": [AIMessage(content=websearch_result)]}
     # except Exception as e:
     #     import traceback
     #     traceback.print_exc()
     #     print(f"Error: {e}")
 
 def generate(state: State):
-    # context = state.get("messages", [{}])[-1].content
-    context = "\n\n\n".join([message.content for message in state.get("messages", [{}])])
+    context = state.get('context', [])
+    messages = state.get("messages", [{}])
+    # Handle both dict and AIMessage/Message objects
+    message_contents = []
+    for msg in messages:
+        if hasattr(msg, 'content'):
+            message_contents.append(msg.content)
+        elif isinstance(msg, dict):
+            message_contents.append(msg.get('content', ''))
+        else:
+            message_contents.append(str(msg))
+    message_contents.extend(context)
+
+    context = "\n\n\n".join(message_contents)
     print(colorize(f"\n\nGeneration context: {context}", "CYAN"))
     generate_prompt = PromptTemplate(
         template=prompts.generate_prompt,
@@ -154,7 +185,7 @@ def generate(state: State):
 
     print(colorize(f"Generation: {result.content}", "GREEN"))
 
-    return {"messages": [{"role": "assistant", "content": result.content}]}
+    return {"messages": [result]}
 
 
 

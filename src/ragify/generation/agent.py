@@ -10,11 +10,7 @@ from src.ragify.generation.prompts import prompts
 class Agent:
     def __init__(self, tools=None):
         self.tools = tools or []
-        self._prompt = ChatPromptTemplate.from_messages([
-            ("system", prompts.system_prompt),
-            ("user", "{input}"),
-            ("assistant", "{agent_scratchpad}")
-        ])
+        self._prompt = prompts.system_prompt
 
     def create(self):
         agent = create_agent(llm.client, tools=self.tools, system_prompt=self._prompt)
