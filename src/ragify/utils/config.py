@@ -10,10 +10,17 @@ RERANKER_MODEL = getenv("RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
 RERANKER_BACKEND = getenv("RERANKER_BACKEND", "transformers")
 # RERANKER_MODEL = getenv("RERANKER_MODEL", "Felladrin/gguf-Q8_0-bge-reranker-v2-m3")
 
-LLM_MODEL = getenv("LLM_MODEL", "llama3.2")
-LLM_URL = getenv("LLM_URL", "http://localhost:11434")
+# Classification
+CLASSIFICATION_MODEL = getenv("CLASSIFICATION_MODEL", "meta/llama-3.2-1b-instruct")
+CLASSIFICATION_URL = getenv("CLASSIFICATION_URL", "")
+CLASSIFICATION_API_KEY = getenv("CLASSIFICATION_API_KEY", "")
+
+# Generation LLM
+LLM_MODEL = getenv("LLM_MODEL", "qwen/qwen3-next-80b-a3b-thinking")
+LLM_URL = getenv("LLM_URL", "")
 LLM_API_KEY = getenv("LLM_API_KEY", "")
 
+# VectorDB
 VECTORDB_URL = getenv("VECTORDB_URL", "http://localhost:6333/")
 COLLECTION_NAME = getenv("COLLECTION_NAME", "documents")
 VECTOR_SIZE = int(getenv("VECTOR_SIZE", "384"))

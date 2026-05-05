@@ -1,40 +1,63 @@
+import re
+from os import getenv
+
 from langchain_core.messages import AIMessage
 from langchain_core.prompts import PromptTemplate
-from langchain_tavily import TavilySearch
+
+# from langchain_tavily import TavilySearch
 from langgraph.graph import END, START
 from langgraph.graph.state import StateGraph
+from tavily import TavilyClient
 
+from src.ragify.classification.model import classification_model
 from src.ragify.generation.llm import llm
 from src.ragify.generation.prompts import prompts
 from src.ragify.generation.schema import Evaluate, RouteIdentifier
 from src.ragify.generation.state import State
 from src.ragify.generation.tools import doc_tool, routing_tool
 from src.ragify.retrieval import get_retriever
+from src.utils.colors import colorize
 
+tavily_client = TavilyClient(api_key=getenv("TAVILY_API_KEY"))
 
 def query_classifier(state: State):
-    question = state.get("messages", [{}])[-1].content
     workspace_id = state.get("workspace_id")
-    retriever_tool = get_retriever(workspace_id)
-    context = retriever_tool.invoke(question)
-    print("Docs received from Qdrant")
+    question = state.get("messages", [{}])[-1].content
+    print(colorize(f"\n\n\nQuestion: {question}", "RED"))
 
-    llm_with_structured_output = llm.with_structured_output(RouteIdentifier)
+    retriever = get_retriever(workspace_id)
+    context = retriever.invoke(question)
+    print(colorize(f"\ncontext: \n{context}", "CYAN"))
+
+
     classify_prompt = PromptTemplate(
         template=prompts.classify_prompt,
         input_variables=["question", "context"],
     )
-    chain = classify_prompt | llm_with_structured_output
+    # classify = classification_model.classify(RouteIdentifier)
+    classify = classification_model.client
+    chain = classify_prompt | classify
 
-    result = chain.invoke({"question": question, "context": context})
-    print("Result received is in query classifier")
-    print(result.route)
+    try:
+        result = chain.invoke({"question": question, "context": context}).content
 
-    return {
-        "messages": state["messages"],
-        "route": result.route,
-        "latest_query": question,
-    }
+        match = re.search(r"\s*['\"]?(index|general|search)['\"]?", str(result))
+        route = match.group(1) if match else 'index'
+
+        print(colorize(f"\n\n\nResult: {result}", "GREEN"))
+        print(colorize(f"\n\n\nQuery classifier: {route}", "GREEN"))
+
+        return {
+            "messages": state["messages"],
+            "route": route,
+            "latest_query": question,
+        }
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print("Error")
+
 
 
 def general_llm(state: State):
@@ -49,8 +72,12 @@ def retriever_node(state: State):
     workspace_id = state.get("workspace_id")
     from src.ragify.generation.agent import get_agent
 
+    print(colorize(f"latest_query: {messages}", "CYAN"))
+
     agent = get_agent(workspace_id)
-    result = agent.invoke({"input": messages})
+    result = agent.invoke(messages)
+
+    print(colorize(f"Retriever result: {result}", "CYAN"))
 
     intermediate_steps = result.get("intermediate_steps", [])
     tool_calls = []
@@ -61,6 +88,7 @@ def retriever_node(state: State):
     new_message = AIMessage(
         content=result.get("output", ""), additional_kwargs={"tool_calls": tool_calls}
     )
+    print(f"retriever_node result: {new_message}")
 
     return {"messages": [new_message]}
 
@@ -77,7 +105,7 @@ def evaluator(state: State):
     chain_graded = grading_prompt | llm_with_grade
     result = chain_graded.invoke({"question": question, "context": context})
 
-    print(result)
+    print(colorize(f"\n\nRetrival evaluator: {result}", "GREEN"))
     return {"messages": state["messages"], "binary_score": result.binary_score}
 
 
@@ -86,32 +114,48 @@ def query_refinement(state: State):
     rewrite_prompt = PromptTemplate(
         template=prompts.rewrite_prompt, input_variables=["query"]
     )
-    chain = rewrite_prompt | llm
+    chain = rewrite_prompt | llm.client
     result = chain.invoke({"query": query})
-    print(result)
+    print(colorize(f"\n\nQuery refinement: {result}", "GREEN"))
 
     return {"latest_query": result.content}
 
 
+def web_search(state: State):
+    # try:
+    # search_tool = TavilySearch(max_results=5, topic="general")
+    # result = search_tool.invoke({"query": state.get("latest_query", "")})
+    results = tavily_client.search(state.get("latest_query", "")).get('results', [])
+
+    # contents = [item["content"] for item in result if "content" in item]
+    print(colorize(f"\n\nWeb search: {results}", "GREEN"))
+
+    websearch_result = "web search results:\n" + "\n\n".join([
+        f"{result.get('title')} ({result.get('url')})\n{result.get('content')}"
+        for result in results
+    ])
+
+    return {"messages": [{"role": "assistant", "content": websearch_result}]}
+    # except Exception as e:
+    #     import traceback
+    #     traceback.print_exc()
+    #     print(f"Error: {e}")
+
 def generate(state: State):
-    context = state.get("messages", [{}])[-1].content
+    # context = state.get("messages", [{}])[-1].content
+    context = "\n\n\n".join([message.content for message in state.get("messages", [{}])])
+    print(colorize(f"\n\nGeneration context: {context}", "CYAN"))
     generate_prompt = PromptTemplate(
-        template=prompts.generate_prompt, input_variables=["context"]
+        template=prompts.generate_prompt,
+        input_variables=["context"]
     )
-    generate_chain = generate_prompt | llm
+    generate_chain = generate_prompt | llm.client
     result = generate_chain.invoke({"context": context})
+
+    print(colorize(f"Generation: {result.content}", "GREEN"))
 
     return {"messages": [{"role": "assistant", "content": result.content}]}
 
-
-def web_search(state: State):
-    search_tool = TavilySearch()
-    result = search_tool.invoke(state.get("latest_query", ""))
-
-    contents = [item["content"] for item in result if "content" in item]
-    print(contents)
-
-    return {"messages": [{"role": "assistant", "content": "\n\n".join(contents)}]}
 
 
 graph = StateGraph(State)

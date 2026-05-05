@@ -9,6 +9,10 @@ from bson.errors import InvalidId
 from fastapi import HTTPException, UploadFile
 from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, HumanMessage, messages_from_dict
+from magika import Magika
+
+from apps.api.src.workspace.utils import mime_to_extension, replace_extension
+from src.ragify.ingestion.grobid_ingestion import GrobidIngestor
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent.parent))
 
@@ -16,6 +20,7 @@ from src.ragify.generation import builder
 from src.ragify.ingestion import ingestion, transcoder
 from src.ragify.retrieval import get_retriever, vector_store_manager
 from src.utils.files import ensure_dir
+from src.utils.threads import run_in_threads
 
 from .repository import (
     append_workspace_materials,
@@ -44,6 +49,7 @@ from .serializer import (
     serialize_workspaces,
 )
 
+magika= Magika()
 
 def _invalid_userId():
     raise HTTPException(status_code=400, detail="Invalid userId")
@@ -116,90 +122,164 @@ async def _ensure_workspace_access(workspace_id: str, user_id: str):
     return workspace
 
 
-async def _process_uploaded_files(status_id: str, workspace_id: str):
+async def _process_uploaded_files(status_id: str, workspace_id: str, upload_dir: str):
     status = await get_upload_status_by_id(status_id)
     if status is None:
         return
 
-    all_chunks: list[Document] = []
-    successful_materials: list[dict] = []
+    # all_chunks: list[Document] = []
+    # successful_materials: list[dict] = []
 
     await update_upload_status(status_id, {"status": "processing", "error": None})
     await _append_upload_log(status_id, "Starting background file processing")
 
+
+    # Group files by type
+    files_by_type = {}
     for file in status.get("files", []):
-        file_name = file["name"]
-        file_path = file["storage_path"]
-        file_kind = file["kind"]
+        file_type = file["kind"]
+        if file_type not in files_by_type:
+            files_by_type[file_type] = []
+        files_by_type[file_type].append(file)
 
-        await _set_file_status(status_id, file["id"], "processing")
-        await _append_upload_log(status_id, f"Processing {file_name}")
+    # Track overall success
+    successful_count = 0
+    failed_count = 0
 
-        try:
-            suffix = Path(file_path).suffix.lower()
-            if suffix == ".pdf":
-                await _append_upload_log(
-                    status_id, f"Parsing PDF into markdown for {file_name}"
-                )
-            elif suffix == ".md":
-                await _append_upload_log(
-                    status_id, f"Reading markdown content for {file_name}"
-                )
-            else:
-                await _append_upload_log(
-                    status_id,
-                    f"Converting {file_kind or 'file'} into markdown for {file_name}",
-                )
+    # Process each file type
+    for file_type, files in files_by_type.items():
+        await _append_upload_log(
+            status_id, f"Processing {len(files)} {file_type} file(s)"
+        )
 
-            content = transcoder.convert_to_markdown(file_path)
-            if not content:
-                await _set_file_status(
-                    status_id, file["id"], "failed", "No valid content extracted"
-                )
-                await _append_upload_log(
-                    status_id, f"Skipping {file_name}: no valid content extracted"
-                )
-                continue
+        if file_type == "pdf":
+            # Process all PDFs using GrobidIngestor (batch processing)
+            try:
+                ingestor = GrobidIngestor(workspace_id, upload_dir)
+                ingestor.ingest()
 
-            chunks = ingester.split_text(content)
-            for i, chunk in enumerate(chunks):
-                all_chunks.append(
-                    Document(
-                        page_content=chunk, metadata={"source": file_name, "chunk": i}
+                # PDFs processed successfully - update all PDF file statuses
+                for file in files:
+                    await _set_file_status(status_id, file["id"], "completed")
+                    await _append_upload_log(
+                        status_id, f"Successfully processed PDF: {file['name']}"
                     )
-                )
+                    successful_count += 1
 
-            successful_materials.append(
-                {k: v for k, v in file.items() if k not in {"status", "error"}}
-            )
-            await _set_file_status(status_id, file["id"], "completed")
-            await _append_upload_log(
-                status_id, f"Processed {file_name} into {len(chunks)} chunks"
-            )
-        except Exception as exc:
-            await _set_file_status(status_id, file["id"], "failed", str(exc))
-            await _append_upload_log(status_id, f"Failed processing {file_name}: {exc}")
+            except Exception as exc:
+                # Grobid processing failed - mark all PDFs as failed
+                error_msg = str(exc)
+                for file in files:
+                    await _set_file_status(
+                        status_id, file["id"], "failed", error_msg
+                    )
+                    await _append_upload_log(
+                        status_id,
+                        f"Failed to process PDF {file['name']}: {error_msg}",
+                    )
+                    failed_count += 1
 
-    if not all_chunks:
-        await update_upload_status(
-            status_id,
-            {
-                "status": "failed",
-                "completed_at": datetime.now(UTC),
-                "error": "No valid content found in uploaded documents",
-            },
-        )
-        await _append_upload_log(
-            status_id, "Upload failed: no valid content found in uploaded documents"
-        )
-        return
+        elif file_type == "md":
+            # Process markdown files
+            from src.ragify.ingestion.chunk_processor import process_section
+            from src.ragify.ingestion.transcoder import transcoder
+            from src.utils.files import get_file_content
 
-    try:
-        await _append_upload_log(
-            status_id, f"Indexing {len(all_chunks)} chunks into vector database"
-        )
-        ingester.index_documents(all_chunks, workspace_id)
-        await append_workspace_materials(workspace_id, successful_materials)
+            for file in files:
+                try:
+                    file_content = get_file_content(file["storage_path"])
+                    if not file_content:
+                        raise ValueError("File is empty")
+
+                    chunks = process_section([file_content])
+                    from langchain_core.documents import Document
+
+                    file_chunks = []
+                    for i, chunk in enumerate(chunks):
+                        file_chunks.append(
+                            Document(
+                                page_content=chunk,
+                                metadata={
+                                    "source": file["name"],
+                                    "chunk": i,
+                                    "chunk_type": "markdown",
+                                },
+                            )
+                        )
+
+                    # Index chunks
+                    from src.ragify.retrieval import vector_store_manager
+
+                    vector_store_manager.insert_documents(workspace_id, file_chunks)
+
+                    await _set_file_status(status_id, file["id"], "completed")
+                    await _append_upload_log(
+                        status_id,
+                        f"Successfully processed markdown file: {file['name']} ({len(chunks)} chunks)",
+                    )
+                    successful_count += 1
+
+                except Exception as exc:
+                    await _set_file_status(
+                        status_id, file["id"], "failed", str(exc)
+                    )
+                    await _append_upload_log(
+                        status_id,
+                        f"Failed to process markdown file {file['name']}: {exc}",
+                    )
+                    failed_count += 1
+
+        else:
+            # Process other file types (convert to markdown first)
+            from src.ragify.ingestion.chunk_processor import process_section
+            from src.ragify.ingestion.transcoder import transcoder
+
+            for file in files:
+                try:
+                    content = transcoder.convert_to_markdown(file["storage_path"])
+                    if not content:
+                        raise ValueError("No valid content extracted")
+
+                    chunks = process_section([content])
+                    from langchain_core.documents import Document
+
+                    file_chunks = []
+                    for i, chunk in enumerate(chunks):
+                        file_chunks.append(
+                            Document(
+                                page_content=chunk,
+                                metadata={
+                                    "source": file["name"],
+                                    "chunk": i,
+                                    "chunk_type": file_type or "file",
+                                },
+                            )
+                        )
+
+                    # Index chunks
+                    from src.ragify.retrieval import vector_store_manager
+
+                    vector_store_manager.insert_documents(workspace_id, file_chunks)
+
+                    await _set_file_status(status_id, file["id"], "completed")
+                    await _append_upload_log(
+                        status_id,
+                        f"Successfully processed {file_type} file: {file['name']} ({len(chunks)} chunks)",
+                    )
+                    successful_count += 1
+
+                except Exception as exc:
+                    await _set_file_status(
+                        status_id, file["id"], "failed", str(exc)
+                    )
+                    await _append_upload_log(
+                        status_id,
+                        f"Failed to process {file_type} file {file['name']}: {exc}",
+                    )
+                    failed_count += 1
+
+    # Final status
+    if successful_count > 0:
         await update_upload_status(
             status_id,
             {
@@ -210,20 +290,179 @@ async def _process_uploaded_files(status_id: str, workspace_id: str):
         )
         await _append_upload_log(
             status_id,
-            f"Finished processing {len(successful_materials)} files successfully",
+            f"Upload completed: {successful_count} file(s) processed successfully, {failed_count} failed",
         )
-    except Exception as exc:
+    elif failed_count > 0:
         await update_upload_status(
             status_id,
             {
                 "status": "failed",
                 "completed_at": datetime.now(UTC),
-                "error": str(exc),
+                "error": f"All files failed to process. {failed_count} file(s) failed.",
             },
         )
         await _append_upload_log(
-            status_id, f"Upload failed while storing vectors: {exc}"
+            status_id,
+            f"Upload failed: all {failed_count} file(s) failed to process",
         )
+    else:
+        await update_upload_status(
+            status_id,
+            {
+                "status": "failed",
+                "completed_at": datetime.now(UTC),
+                "error": "No files were processed",
+            },
+        )
+        await _append_upload_log(
+            status_id, "Upload failed: no files were processed"
+        )
+
+
+    # for file in status.get("files", []):
+    #     file_name = file["name"]
+    #     file_path = file["storage_path"]
+    #     file_kind = file["kind"]
+
+    #     await _set_file_status(status_id, file["id"], "processing")
+    #     await _append_upload_log(status_id, f"Processing {file_name}")
+
+    #     try:
+    #         suffix = Path(file_path).suffix.lower()
+    #         if suffix == ".pdf":
+    #             await _append_upload_log(
+    #                 status_id, f"Parsing PDF into markdown for {file_name}"
+    #             )
+    #             # from src.ragify.ingestion.transcoder import transcoder
+    #             # chunks = transcoder.process_pdf(file_path, workspace_id, source_name=file_name)
+    #             # if chunks:
+    #             #     all_chunks.extend(chunks)
+    #             #     await _append_upload_log(
+    #             #         status_id, f"Processed {file_name} into {len(chunks)} chunks"
+    #             #     )
+    #             # else:
+    #             #     raise ValueError("No content extracted from PDF")
+    #             ingestor = GrobidIngestor(workspace_id, upload_dir)
+    #             ingestor.ingest()
+
+    #         elif suffix == ".md":
+    #             await _append_upload_log(
+    #                 status_id, f"Reading markdown content for {file_name}"
+    #             )
+    #             from src.ragify.ingestion.transcoder import transcoder
+    #             content = transcoder.convert_to_markdown(file_path)
+    #             if not content:
+    #                 raise ValueError("No valid content extracted")
+
+    #             from src.utils.files import get_file_content
+    #             file_content = get_file_content(file_path)
+    #             if not file_content:
+    #                 raise ValueError("File is empty")
+
+    #             from src.ragify.ingestion.chunk_processor import process_section
+    #             chunks = process_section([file_content])
+    #             from langchain_core.documents import Document
+    #             for i, chunk in enumerate(chunks):
+    #                 all_chunks.append(
+    #                     Document(
+    #                         page_content=chunk,
+    #                         metadata={
+    #                             "source": file_name,
+    #                             "chunk": i,
+    #                             "chunk_type": "markdown",
+    #                         },
+    #                     )
+    #                 )
+    #             from src.ragify.retrieval import vector_store_manager
+    #             vector_store_manager.insert_documents(workspace_id, all_chunks)
+    #             await _append_upload_log(
+    #                 status_id, f"Processed {file_name} into {len(chunks)} chunks"
+    #             )
+
+    #         else:
+    #             await _append_upload_log(
+    #                 status_id,
+    #                 f"Converting {file_kind or 'file'} into markdown for {file_name}",
+    #             )
+    #             from src.ragify.ingestion.transcoder import transcoder
+    #             content = transcoder.convert_to_markdown(file_path)
+    #             if not content:
+    #                 raise ValueError("No valid content extracted")
+
+    #             from src.ragify.ingestion.chunk_processor import process_section
+    #             chunks = process_section([content])
+    #             from langchain_core.documents import Document
+    #             for i, chunk in enumerate(chunks):
+    #                 all_chunks.append(
+    #                     Document(
+    #                         page_content=chunk,
+    #                         metadata={
+    #                             "source": file_name,
+    #                             "chunk": i,
+    #                             "chunk_type": file_kind or "file",
+    #                         },
+    #                     )
+    #                 )
+    #             from src.ragify.retrieval import vector_store_manager
+    #             vector_store_manager.insert_documents(workspace_id, all_chunks)
+    #             await _append_upload_log(
+    #                 status_id, f"Processed {file_name} into {len(chunks)} chunks"
+    #             )
+
+
+    #         successful_materials.append(
+    #             {k: v for k, v in file.items() if k not in {"status", "error"}}
+    #         )
+    #         await _set_file_status(status_id, file["id"], "completed")
+
+    #     except Exception as exc:
+    #         await _set_file_status(status_id, file["id"], "failed", str(exc))
+    #         await _append_upload_log(status_id, f"Failed processing {file_name}: {exc}")
+
+    # if not all_chunks:
+    #     await update_upload_status(
+    #         status_id,
+    #         {
+    #             "status": "failed",
+    #             "completed_at": datetime.now(UTC),
+    #             "error": "No valid content found in uploaded documents",
+    #         },
+    #     )
+    #     await _append_upload_log(
+    #         status_id, "Upload failed: no valid content found in uploaded documents"
+    #     )
+    #     return
+
+    # try:
+    #     await _append_upload_log(
+    #         status_id, f"Indexing {len(all_chunks)} chunks into vector database"
+    #     )
+    #     await _append_upload_log(
+    #         status_id,
+    #         f"Finished processing {len(successful_materials)} files successfully",
+    #     )
+    #     await update_upload_status(
+    #         status_id,
+    #         {
+    #             "status": "completed",
+    #             "completed_at": datetime.now(UTC),
+    #             "error": None,
+    #         },
+    #     )
+    #     await _append_upload_log(
+    #         status_id,
+    #         f"Finished processing {len(successful_materials)} files successfully",
+    #     )
+    # except Exception as exc:
+    #     await update_upload_status(
+    #         status_id,
+    #         {
+    #             "status": "failed",
+    #             "completed_at": datetime.now(UTC),
+    #             "error": str(exc),
+    #         },
+    #     )
+    #     await _append_upload_log(status_id, f"Upload failed while storing vectors: {exc}")
 
 
 async def get_workspaces(user_id: str):
@@ -337,6 +576,37 @@ async def remove_all_sessions(workspace_id: str, user_id: str):
     return {"workspace_id": workspace_id}
 
 
+async def determine_type_and_save_doc(file: UploadFile, upload_dir: Path):
+    try:
+        if not file.filename:
+            return None
+
+        file_id = str(uuid4())
+        file_bytes = await file.read()
+
+        magika_result = magika.identify_bytes(file_bytes)
+        mime_type = magika_result.output.mime_type if magika_result.ok else "application/octet-stream"
+        # file_extension = replace_extension(file.filename, mime_type)
+        filename = replace_extension(file.filename, mime_type)
+
+        target_path = upload_dir / f"{file_id}-{filename}"
+        target_path.write_bytes(file_bytes)
+
+        return {
+                "id": file_id,
+                "name": filename,
+                "kind": Path(filename).suffix.lower().lstrip(".") or "file",
+                "size": len(file_bytes),
+                "mime_type": mime_type,
+                "storage_path": str(target_path),
+                "status": "uploaded",
+                "error": None,
+                "created_at": datetime.now(UTC).isoformat(),
+            }
+    except Exception as err:
+        print(f"[upload] failed receiving {file.filename}: {err}")
+
+
 async def upload_docs(workspace_id: str, user_id: str, files: List[UploadFile] | None):
     await _ensure_workspace_access(workspace_id, user_id)
 
@@ -345,33 +615,19 @@ async def upload_docs(workspace_id: str, user_id: str, files: List[UploadFile] |
 
     upload_dir = _workspace_upload_dir(workspace_id)
     ensure_dir(str(upload_dir))
-    material_records = []
 
-    for upload in files:
-        try:
-            if not upload.filename:
-                continue
-
-            file_id = str(uuid4())
-            target_path = upload_dir / f"{file_id}-{upload.filename}"
-            file_bytes = await upload.read()
-            target_path.write_bytes(file_bytes)
-
-            material_records.append(
-                {
-                    "id": file_id,
-                    "name": upload.filename,
-                    "kind": Path(upload.filename).suffix.lower().lstrip(".") or "file",
-                    "size": len(file_bytes),
-                    "mime_type": upload.content_type or "application/octet-stream",
-                    "storage_path": str(target_path),
-                    "status": "uploaded",
-                    "error": None,
-                    "created_at": datetime.now(UTC).isoformat(),
-                }
-            )
-        except Exception as exc:
-            print(f"[upload] failed receiving {upload.filename}: {exc}")
+    # material_records = filter(
+    #     lambda record: record is not None,
+    #     run_in_threads(
+    #         lambda file: await determine_type_and_save_doc(file, upload_dir),
+    #         files
+    #     )
+    # )
+    material_records = list(filter(None,
+        await asyncio.gather(
+            *(determine_type_and_save_doc(f, upload_dir) for f in files)
+        )
+    ))
 
     if not material_records:
         raise HTTPException(
@@ -383,7 +639,7 @@ async def upload_docs(workspace_id: str, user_id: str, files: List[UploadFile] |
     await _append_upload_log(
         status_id, f"Received {len(material_records)} files from client"
     )
-    asyncio.create_task(_process_uploaded_files(status_id, workspace_id))
+    asyncio.create_task(_process_uploaded_files(status_id, workspace_id, str(upload_dir)))
 
     return {
         "status_id": status_id,

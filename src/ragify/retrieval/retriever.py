@@ -1,7 +1,7 @@
 from typing import Optional
 
 from langchain_core.documents import Document
-from langchain_core.tools import create_retriever_tool
+from langchain_core.tools import create_retriever_tool, tool
 
 # from src.ragify.retrieval.embedder import embeddings
 from src.ragify.retrieval.vector_store import vector_store_manager
@@ -45,7 +45,7 @@ class RetrieverTool:
     def retrieve(self, query: str, k: int = 4) -> list[Document]:
         return self.invoke(query, k)
 
-
+# @tool("get_retriever", description="Returns vector database retriever tool")
 def get_retriever(workspace_id: str | None = None):
     retriever_tool = RetrieverTool(workspace_id=workspace_id)
     return retriever_tool.tool
