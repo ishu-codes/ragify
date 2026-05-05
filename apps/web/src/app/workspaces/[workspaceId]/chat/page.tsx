@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, SendHorizonalIcon } from "lucide-react";
+import { Plus, SendHorizonalIcon, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -19,6 +19,7 @@ import { createWorkspaceMessage, writeWorkspaceSession } from "@/lib/workspace-s
 import type { WorkspaceSession, WorkspaceSessionSummary, WorkspaceMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -47,7 +48,7 @@ function parseContent(content: string): ParsedContent[] {
   while (startIdx !== -1) {
     const endIdx = content.indexOf(thinkEnd, startIdx + thinkStart.length);
     if (endIdx === -1) break;
-    
+
     if (startIdx > lastIndex) {
       parts.push({ type: "text", content: content.slice(lastIndex, startIdx) });
     }
@@ -104,6 +105,36 @@ export default function ChatPage() {
     staleTime: 1000 * 60 * 10,
     enabled: Boolean(session?.accessToken && workspaceId && activeSession.sessionId),
   });
+
+  const deleteSessionMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      return workspaceApi.deleteSession(session!.accessToken, workspaceId!, sessionId);
+    },
+    onSuccess: (data, sessionId) => {
+      queryClient.invalidateQueries({ queryKey: ["workspace-sessions", workspaceId] });
+      // If the deleted session was the active one, clear it
+      if (activeSession.sessionId === sessionId) {
+        setActiveSession({
+          sessionId: null,
+          sessionName: null,
+          createdAt: null,
+        });
+        setLocalMessages([]);
+      }
+      toast.success("Session deleted successfully");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete session");
+    },
+  });
+
+  function handleDeleteSession(sessionId: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!sessionId) return;
+    if (confirm("Are you sure you want to delete this session?")) {
+      deleteSessionMutation.mutate(sessionId);
+    }
+  }
 
   const [localMessages, setLocalMessages] = useState<WorkspaceMessage[]>([]);
 
@@ -201,6 +232,13 @@ export default function ChatPage() {
 
   const isLoadingMessages = messagesQuery.isLoading || messagesQuery.isFetching;
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [displayMessages]);
+
   return (
     <div className="flex h-full">
       <div className="flex w-80 shrink-0 flex-col p-6">
@@ -211,41 +249,54 @@ export default function ChatPage() {
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="space-y-2">
-            {sessionsQuery.data?.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleSelectSession(item)}
-                className={cn(
-                  "w-full rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted/50",
-                  activeSession.sessionId === item.id
-                    ? "border-primary bg-primary/10"
-                    : "border-border/60 bg-background/80",
-                )}
-              >
-                <p className="truncate font-medium">{item.name}</p>
-                <p className="mt-1 truncate text-xs text-muted-foreground">{formatDate(item.created_at)}</p>
-              </button>
-            ))}
-            {sessionsQuery.isLoading && (
-              <>
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
-              </>
-            )}
-            {sessionsQuery.data?.length === 0 && !sessionsQuery.isLoading && (
-              <p className="text-sm text-muted-foreground">No previous sessions</p>
-            )}
+          <div className="flex-1 overflow-y-auto">
+            <div className="space-y-2">
+              {sessionsQuery.data?.map((item) => (
+                <div
+                  key={item.id}
+                  className={cn(
+                    "group w-full rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted/50 flex items-center justify-between",
+                    activeSession.sessionId === item.id
+                      ? "border-primary bg-primary/10"
+                      : "border-border/60 bg-background/80",
+                  )}
+                >
+                  <button
+                    onClick={() => handleSelectSession(item)}
+                    className="flex-1 truncate text-left"
+                  >
+                    <p className="truncate font-medium">{item.name}</p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{formatDate(item.created_at)}</p>
+                  </button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => handleDeleteSession(item.id, e)}
+                    disabled={deleteSessionMutation.isPending}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              ))}
+              {sessionsQuery.isLoading && (
+                <>
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </>
+              )}
+              {sessionsQuery.data?.length === 0 && !sessionsQuery.isLoading && (
+                <p className="text-sm text-muted-foreground">No previous sessions</p>
+              )}
+            </div>
           </div>
-        </div>
       </div>
 
       <Separator orientation="vertical" />
 
       <div className="h-[calc(100vh-4rem)] flex-1 flex flex-col">
-        <div className="flex-1 overflow-y-auto p-6">
+        <div ref={containerRef} className="flex-1 overflow-y-auto p-6">
           <div className="space-y-2">
             {isLoadingMessages && (
               <div className="space-y-4">
@@ -277,18 +328,17 @@ export default function ChatPage() {
                   <div className={cn("text-sm leading-7", message.role === "assistant" && "text-muted-foreground")}>
                     {parseContent(cleanMarkdownContent(message.content)).map((part, idx) =>
                       part.type === "thinking" ? (
-                        <div key={idx} className="text-muted-foreground/70 italic text-xs mb-2 p-2 border-l-2 border-border/50">
+                        <div
+                          key={idx}
+                          className="text-muted-foreground/70 italic text-xs mb-2 p-2 border-l-2 border-border/50"
+                        >
                           <ReactMarkdown>{part.content}</ReactMarkdown>
                         </div>
                       ) : (
-                        <ReactMarkdown
-                          key={idx}
-                          remarkPlugins={[remarkGfm, remarkMath]}
-                          rehypePlugins={[rehypeKatex]}
-                        >
+                        <ReactMarkdown key={idx} remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
                           {part.content}
                         </ReactMarkdown>
-                      )
+                      ),
                     )}
                   </div>
                 </div>
@@ -297,7 +347,8 @@ export default function ChatPage() {
         </div>
 
         <form className="px-6 py-4 border-t flex gap-4 items-end" onSubmit={handleSubmit}>
-          <Textarea
+          <Input
+            type="text"
             className="min-h-16"
             placeholder={activeSession.sessionId ? "Continue the conversation..." : "Ask me anything"}
             value={prompt}
