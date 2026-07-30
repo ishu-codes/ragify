@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 EMBED_MODEL = getenv("EMBED_MODEL", "qllama/bge-small-en-v1.5:latest")
-RERANKER_MODEL = getenv("RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
-# RERANKER_MODEL = getenv("RERANKER_MODEL", "BAAI/bge-reranker-base")
+# RERANKER_MODEL = getenv("RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
+RERANKER_MODEL = getenv("RERANKER_MODEL", "BAAI/bge-reranker-base")
 RERANKER_BACKEND = getenv("RERANKER_BACKEND", "transformers")
 # RERANKER_MODEL = getenv("RERANKER_MODEL", "Felladrin/gguf-Q8_0-bge-reranker-v2-m3")
 

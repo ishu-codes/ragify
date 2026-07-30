@@ -22,8 +22,11 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 COLLECTION_NAME = "benchmark"
 DOCS_DIR = "./data/papers"
 
+
 class Benchmark:
-    def __init__(self, collection_name: str = COLLECTION_NAME, docs_dir: str = DOCS_DIR) -> None:
+    def __init__(
+        self, collection_name: str = COLLECTION_NAME, docs_dir: str = DOCS_DIR
+    ) -> None:
         self._collection_name = collection_name
         self._docs_dir = docs_dir
         os.makedirs(docs_dir, exist_ok=True)
@@ -31,17 +34,16 @@ class Benchmark:
 
     # Download docs
     def download_docs(self) -> None:
-        run_in_threads(
-            self._fetch_docs,
-            DOCS
-        )
+        run_in_threads(self._fetch_docs, DOCS)
 
     def _fetch_docs(self, filename: str) -> None:
         try:
-            with requests.get(f'https://arxiv.org/pdf/{filename}.pdf', stream=True, timeout=30) as r:
+            with requests.get(
+                f"https://arxiv.org/pdf/{filename}.pdf", stream=True, timeout=30
+            ) as r:
                 r.raise_for_status()
 
-                with open(f'{self._docs_dir}/{filename}.pdf', "wb") as f:
+                with open(f"{self._docs_dir}/{filename}.pdf", "wb") as f:
                     for chunk in r.iter_content(chunk_size=8192):
                         if chunk:
                             f.write(chunk)
@@ -100,7 +102,9 @@ class Benchmark:
 
         print(f"\nRunning BASELINE: {experiment_name} (without reranker)...")
         print("=" * 60)
-        result = evaluator.run_benchmark(self._queries, k=k, experiment_name=experiment_name)
+        result = evaluator.run_benchmark(
+            self._queries, k=k, experiment_name=experiment_name
+        )
 
         result = {
             "experiment_name": result.experiment_name,
@@ -116,9 +120,9 @@ class Benchmark:
         print(f"Results: {json.dumps(result, indent=2)}")
         return result
 
-
     def _run_with_reranker(self) -> dict[str, Any]:
         from src.ragify.reranking.reranker import get_reranker
+
         config = load_config("./config/rerank.yaml")
 
         initial_k = config.get("initial_k", 25)
@@ -165,15 +169,16 @@ class Benchmark:
 def main():
     benchmark = Benchmark()
 
-    print("=" * 60)
-    print("DOWNLOADING DOCS")
-    print("=" * 60)
-    benchmark.download_docs()
+    # ToDo: Add download checker to avoid redownloading files if they already exists
+    # print("=" * 60)
+    # print("DOWNLOADING DOCS")
+    # print("=" * 60)
+    # benchmark.download_docs()
 
-    print("=" * 60)
-    print("INGESTING PAPERS WITH GROBID + CONTEXT-AWARE CHUNKING")
-    print("=" * 60)
-    benchmark.ingest_docs()
+    # print("=" * 60)
+    # print("INGESTING PAPERS WITH GROBID + CONTEXT-AWARE CHUNKING")
+    # print("=" * 60)
+    # benchmark.ingest_docs()
 
     print("\n" + "=" * 60)
     print("RUNNING BENCHMARK")
