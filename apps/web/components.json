@@ -1,17 +1,17 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "radix-maia",
-  "rsc": true,
+  "style": "base-maia",
+  "rsc": false,
   "tsx": true,
   "tailwind": {
     "config": "",
-    "css": "src/app/globals.css",
+    "css": "src/index.css",
     "baseColor": "mist",
     "cssVariables": true,
     "prefix": ""
   },
   "iconLibrary": "lucide",
-  "rtl": true,
+  "rtl": false,
   "aliases": {
     "components": "@/components",
     "utils": "@/lib/utils",
