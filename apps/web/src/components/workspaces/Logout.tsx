@@ -1,15 +1,19 @@
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import useSessionStore from "@/store/session";
 
-interface Props {
-  children: ReactNode;
-  variant?: "default" | "outline" | "ghost";
-  className?: string;
+interface Props extends ComponentProps<typeof Button> {
+  children?: ReactNode;
 }
-export default function Logout({ children, variant = "default", className = "" }: Props) {
+
+export default function Logout({
+  children,
+  variant = "default",
+  className = "",
+  ...props
+}: Props) {
   const clearSession = useSessionStore((s) => s.clearSession);
   const navigate = useNavigate();
 
@@ -19,7 +23,7 @@ export default function Logout({ children, variant = "default", className = "" }
   };
 
   return (
-    <Button variant={variant} className={className} onClick={handleLogout}>
+    <Button variant={variant} className={className} {...props} onClick={handleLogout}>
       {children}
     </Button>
   );
