@@ -14,7 +14,7 @@ from apps.api.src.config.db import close_mongodb_connection, connect_to_mongodb
 from apps.api.src.config.response import failure
 from apps.api.src.workspace.controller import router as workspace_router
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
+load_dotenv()
 
 
 def _get_cors_origins() -> list[str]:

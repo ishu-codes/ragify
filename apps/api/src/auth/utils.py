@@ -1,6 +1,5 @@
 from datetime import UTC, datetime, timedelta
 from os import getenv
-from pathlib import Path
 
 import bcrypt
 import jwt
@@ -13,7 +12,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from .repository import find_user_by_id
 from .serializer import serialize_user
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+load_dotenv()
 
 bearer_scheme = HTTPBearer()
 

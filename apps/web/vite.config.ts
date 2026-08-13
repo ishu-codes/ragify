@@ -7,6 +7,10 @@ import tailwindcss from "@tailwindcss/vite";
 // https://vite.dev/config/
 export default defineConfig({
 	plugins: [react(), tailwindcss(), babel({ presets: [reactCompilerPreset()] })],
+	server: {
+		host: "::",
+		port: 3000,
+	},
 	resolve: {
 		alias: {
 			"@": path.resolve(import.meta.dirname, "./src"),

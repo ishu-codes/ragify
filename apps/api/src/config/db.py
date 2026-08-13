@@ -1,11 +1,10 @@
 from os import getenv
-from pathlib import Path
 from typing import Any, Dict
 
 from dotenv import load_dotenv
 from pymongo import AsyncMongoClient
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+load_dotenv()
 
 
 uri = getenv("MONGODB_URI", "mongodb://localhost:27017/")
