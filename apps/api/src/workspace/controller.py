@@ -80,19 +80,19 @@ async def workspace_upload_status(workspace_id: str, status_id: str, request: Re
     return success(result)
 
 
+# Sessions
+
+
 @router.post("/{workspace_id}/query")
 async def workspace_query(
     request: Request,
     workspace_id: str,
     body: QueryBody,
 ):
-    result = await WorkspaceService.query_rag(
+    result = await SessionService.query_rag(
         workspace_id, authenticated_user(request)["id"], body.session_id, body.query
     )
     return success(result)
-
-
-# Sessions
 
 
 @router.get("/{workspace_id}/sessions")

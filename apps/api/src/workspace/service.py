@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+from src.utils.threads import run_in_threads
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from bson.errors import InvalidId
@@ -359,6 +361,27 @@ class WorkspaceService:
 
         return {"id": workspace_id}
 
+
+# Session Service
+
+
+class SessionService:
+    @staticmethod
+    async def get_workspace_sessions(workspace_id: str, user_id: str):
+        await _ensure_workspace_access(workspace_id, user_id)
+        sessions = await SessionRepository.get_sessions_by_workspace_id(workspace_id)
+        return serialize_sessions(sessions)
+
+    @staticmethod
+    async def get_session_messages(workspace_id: str, session_id: str, user_id: str):
+        await _ensure_workspace_access(workspace_id, user_id)
+
+        session = await SessionRepository.get_session_by_id(session_id)
+        if session is None or session["workspace_id"] != workspace_id:
+            raise HTTPException(status_code=404, detail="Session could not be found")
+
+        return serialize_session_messages(session)
+
     @staticmethod
     async def query_rag(
         workspace_id: str, user_id: str, session_id: str | None, query: str
@@ -391,27 +414,6 @@ class WorkspaceService:
             "created_at": session["created_at"].isoformat(),
             "answer": output_text,
         }
-
-
-# Session Service
-
-
-class SessionService:
-    @staticmethod
-    async def get_workspace_sessions(workspace_id: str, user_id: str):
-        await _ensure_workspace_access(workspace_id, user_id)
-        sessions = await SessionRepository.get_sessions_by_workspace_id(workspace_id)
-        return serialize_sessions(sessions)
-
-    @staticmethod
-    async def get_session_messages(workspace_id: str, session_id: str, user_id: str):
-        await _ensure_workspace_access(workspace_id, user_id)
-
-        session = await SessionRepository.get_session_by_id(session_id)
-        if session is None or session["workspace_id"] != workspace_id:
-            raise HTTPException(status_code=404, detail="Session could not be found")
-
-        return serialize_session_messages(session)
 
     @staticmethod
     async def rename_session(
