@@ -18,14 +18,14 @@ async def register_user(user_info: RegisterBody):
 
     hashed_pw = hash_password(user_info.password)
 
-    result = await create_user(
+    created_user = await create_user(
         {"name": user_info.name, "email": user_info.email, "password": hashed_pw}
     )
 
     user = {
-        "id": str(result.inserted_id),
-        "name": user_info.name,
-        "email": user_info.email,
+        "id": str(created_user.id),
+        "name": created_user.name,
+        "email": created_user.email,
     }
 
     return {
@@ -41,7 +41,7 @@ async def login_user(user_info: LoginBody):
         raise HTTPException(404, detail="User does not exist!")
         # _invalid_credentials()
 
-    if not verify_password(user_info.password, user["password"]):
+    if not verify_password(user_info.password, user.password):
         _invalid_credentials()
 
     return {

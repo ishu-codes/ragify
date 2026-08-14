@@ -1,65 +1,58 @@
-# from typing import Any
+from datetime import datetime
+from uuid import UUID
 
-# from langchain_core.messages import BaseMessage
-# from pydantic import BaseModel, Field
+from sqlalchemy import DateTime, ForeignKey, String, Text, text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
 
-
-# class Material(BaseModel):
-#     id: str
-#     name: str
-#     kind: str
-#     size: int
-#     mime_type: str
-#     storage_path: str
-#     created_at: str
+from ..config.models import BaseModel
 
 
-# class UploadStatusFile(BaseModel):
-#     id: str
-#     name: str
-#     kind: str
-#     size: int
-#     mime_type: str
-#     storage_path: str
-#     status: str
-#     error: str | None = None
-#     created_at: str
+class Workspace(BaseModel):
+    __tablename__ = "workspaces"
+
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), default="Untitled Workspace")
+    description: Mapped[str] = mapped_column(Text, default="")
+    tags: Mapped[list] = mapped_column(
+        JSONB, default=list, server_default=text("'[]'::jsonb")
+    )
+    materials: Mapped[list] = mapped_column(
+        JSONB, default=list, server_default=text("'[]'::jsonb")
+    )
 
 
-# class UploadStatusLog(BaseModel):
-#     message: str
-#     created_at: str
+class Session(BaseModel):
+    __tablename__ = "sessions"
+
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), default="Untitled Session")
+    messages: Mapped[list] = mapped_column(
+        JSONB, default=list, server_default=text("'[]'::jsonb")
+    )
 
 
-# class UploadStatus(BaseModel):
-#     id: str | None = Field(alias="_id")
-#     workspace_id: str
-#     user_id: str
-#     status: str
-#     files: list[UploadStatusFile]
-#     logs: list[UploadStatusLog]
-#     created_at: str
-#     updated_at: str
-#     completed_at: str | None = None
-#     error: str | None = None
+class UploadStatus(BaseModel):
+    __tablename__ = "upload_statuses"
 
-
-# class Session(BaseModel):
-#     id: str | None = Field(alias="_id")
-#     workspace_id: str
-#     name: str
-#     messages: list[BaseMessage | dict[str, Any]]
-#     created_at: str
-
-
-# class Workspace(BaseModel):
-#     id: str | None = Field(alias="_id")
-#     user_id: str
-#     name: str
-#     description: str
-#     tags: list[str]
-#     materials: list[Material]
-#     created_at: str
-
-#     class Config:
-#         populate_by_name = True
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(50), default="uploaded")
+    files: Mapped[list] = mapped_column(
+        JSONB, default=list, server_default=text("'[]'::jsonb")
+    )
+    logs: Mapped[list] = mapped_column(
+        JSONB, default=list, server_default=text("'[]'::jsonb")
+    )
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )

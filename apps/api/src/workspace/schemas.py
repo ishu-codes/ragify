@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
 
+# Workspace
 class WorkspaceBody(BaseModel):
     user_id: str
 
@@ -16,5 +17,6 @@ class UpdateWorkspaceBody(BaseModel):
     tags: list[str] = []
 
 
+# Session
 class UpdateSessionBody(BaseModel):
     name: str

@@ -9,7 +9,6 @@ from src.utils.threads import run_in_threads
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from bson.errors import InvalidId
 from fastapi import HTTPException, UploadFile
 from langchain_core.messages import AIMessage, HumanMessage, messages_from_dict
 
@@ -68,7 +67,7 @@ async def _append_upload_log(status_id: str, message: str):
         return
 
     logs = [
-        *status.get("logs", []),
+        *status.logs,
         {"message": message, "created_at": datetime.now(UTC).isoformat()},
     ]
     await UploadRepository.update_upload_status(status_id, {"logs": logs})
@@ -83,7 +82,7 @@ async def _set_file_status(
         return
 
     next_files = []
-    for file in status.get("files", []):
+    for file in status.files:
         if file["id"] == file_id:
             next_files.append({**file, "status": next_status, "error": error})
         else:
@@ -93,17 +92,12 @@ async def _set_file_status(
 
 
 async def _ensure_workspace_access(workspace_id: str, user_id: str):
-    try:
-        workspace = await WorkspaceRepository.get_workspace_by_id(workspace_id)
-    except InvalidId as exc:
-        raise HTTPException(
-            status_code=404, detail="Workspace could not be found"
-        ) from exc
+    workspace = await WorkspaceRepository.get_workspace_by_id(workspace_id)
 
     if workspace is None:
         raise HTTPException(status_code=404, detail="Workspace could not be found")
 
-    if workspace["user_id"] != user_id:
+    if str(workspace.user_id) != user_id:
         raise HTTPException(status_code=403, detail="Workspace access denied")
 
     return workspace
@@ -272,7 +266,7 @@ async def _process_uploaded_files(status_id: str, workspace_id: str, upload_dir:
     successful_count = 0
     failed_count = 0
 
-    for file_type, files in _group_files_by_type(status.get("files", [])).items():
+    for file_type, files in _group_files_by_type(status.files).items():
         await _append_upload_log(
             status_id, f"Processing {len(files)} {file_type} file(s)"
         )
@@ -333,7 +327,7 @@ class WorkspaceService:
         if workspace:
             from src.ragify.retrieval import vector_store_manager
 
-            vector_store_manager.create_collection(workspace["_id"])
+            vector_store_manager.create_collection(str(workspace.id))
         return serialize_workspace(workspace)
 
     @staticmethod
@@ -377,7 +371,7 @@ class SessionService:
         await _ensure_workspace_access(workspace_id, user_id)
 
         session = await SessionRepository.get_session_by_id(session_id)
-        if session is None or session["workspace_id"] != workspace_id:
+        if session is None or str(session.workspace_id) != workspace_id:
             raise HTTPException(status_code=404, detail="Session could not be found")
 
         return serialize_session_messages(session)
@@ -396,7 +390,7 @@ class SessionService:
         if session is None:
             raise HTTPException(status_code=404, detail="Session could not be found")
 
-        chat_messages = messages_from_dict(session.get("messages", []))
+        chat_messages = messages_from_dict(session.messages)
         chat_messages.append(HumanMessage(content=query))
 
         from src.ragify.generation import builder
@@ -407,11 +401,11 @@ class SessionService:
         output_text = result["messages"][-1].content
         chat_messages.append(AIMessage(content=output_text))
 
-        await SessionRepository.update_messages(str(session["_id"]), chat_messages)
+        await SessionRepository.update_messages(str(session.id), chat_messages)
         return {
-            "session_id": str(session["_id"]),
-            "session_name": session.get("name", "Untitled Session"),
-            "created_at": session["created_at"].isoformat(),
+            "session_id": str(session.id),
+            "session_name": session.name,
+            "created_at": session.created_at.isoformat(),
             "answer": output_text,
         }
 
@@ -426,7 +420,7 @@ class SessionService:
             raise HTTPException(status_code=400, detail="Session name is required")
 
         session = await SessionRepository.get_session_by_id(session_id)
-        if session is None or session["workspace_id"] != workspace_id:
+        if session is None or str(session.workspace_id) != workspace_id:
             raise HTTPException(status_code=404, detail="Session could not be found")
 
         session = await SessionRepository.update_session(
@@ -439,7 +433,7 @@ class SessionService:
         await _ensure_workspace_access(workspace_id, user_id)
 
         session = await SessionRepository.get_session_by_id(session_id)
-        if session is None or session["workspace_id"] != workspace_id:
+        if session is None or str(session.workspace_id) != workspace_id:
             raise HTTPException(status_code=404, detail="Session could not be found")
 
         await SessionRepository.delete_session(session_id)
@@ -463,8 +457,8 @@ class UploadService:
 
         if (
             status is None
-            or status["workspace_id"] != workspace_id
-            or status["user_id"] != user_id
+            or str(status.workspace_id) != workspace_id
+            or str(status.user_id) != user_id
         ):
             raise HTTPException(
                 status_code=404, detail="Upload status could not be found"
@@ -548,7 +542,7 @@ class UploadService:
         status = await UploadRepository.create_upload_status(
             workspace_id, user_id, material_records
         )
-        status_id = str(status["_id"])
+        status_id = str(status.id)
         await _append_upload_log(
             status_id, f"Received {len(material_records)} files from client"
         )

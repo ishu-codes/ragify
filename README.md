@@ -28,20 +28,16 @@ From repo root:
 ./run.sh start
 ```
 
-This uses `infra/docker/docker-compose.yml` with env from `infra/.env`.
+This uses `infra/docker/docker-compose.yml` with env from the root `.env`.
 
 ### 2) Configure environment
 
-Copy env templates and adjust values:
+The project uses a single `.env` file at the repo root. Create it if missing and adjust values as needed.
 
-```bash
-cp .env.example .env
-cp infra/.env.example infra/.env
-```
+Common variables (see `.env`):
 
-Common variables (see `.env.example`):
-
-- `MONGODB_URI`
+- `DATABASE_URL` (PostgreSQL connection string)
+- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
 - `VECTORDB_URL` (Qdrant)
 - `JWT_SECRET`
 - `LLM_URL`, `LLM_MODEL`, `LLM_API_KEY`

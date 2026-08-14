@@ -1,25 +1,31 @@
-# import sys
-# from pathlib import Path
+from uuid import UUID
 
-from bson import ObjectId
-from bson.errors import InvalidId
+from sqlalchemy import select
 
-# sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent.parent))
-from ..config.db import db
+from ..config.db import async_session_maker
+from .models import User
 
 
 async def find_user_by_id(user_id: str):
     try:
-        object_id = ObjectId(user_id)
-    except InvalidId:
+        user_uuid = UUID(str(user_id))
+    except (ValueError, AttributeError, TypeError):
         return None
 
-    return await db["users"].find_one({"_id": object_id})
+    async with async_session_maker() as session:
+        return await session.get(User, user_uuid)
 
 
 async def find_user_by_email(email: str):
-    return await db["users"].find_one({"email": email})
+    async with async_session_maker() as session:
+        result = await session.execute(select(User).where(User.email == email))
+        return result.scalar_one_or_none()
 
 
 async def create_user(data: dict):
-    return await db["users"].insert_one(data)
+    async with async_session_maker() as session:
+        user = User(**data)
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+        return user

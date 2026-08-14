@@ -23,11 +23,11 @@ help:
 
 infra-up:
 	cd infra/docker && \
-    docker compose --env-file=../.env up -d
+    docker compose --env-file=../../.env up -d
 
 infra-down:
 	cd infra/docker && \
-    docker compose --env-file=../.env down
+    docker compose --env-file=../../.env down
 
 
 # ── Build ─────────────────────────────────────────────────────────────────────

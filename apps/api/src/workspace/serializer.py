@@ -1,3 +1,6 @@
+from .models import Session, UploadStatus, Workspace
+
+
 def serialize_material(material: dict) -> dict:
     return {
         "id": material["id"],
@@ -24,54 +27,54 @@ def serialize_upload_status_file(file: dict) -> dict:
     }
 
 
-def serialize_upload_status(status: dict) -> dict:
+def serialize_upload_status(status: UploadStatus) -> dict:
     return {
-        "id": str(status["_id"]),
-        "workspace_id": status["workspace_id"],
-        "user_id": status["user_id"],
-        "status": status["status"],
+        "id": str(status.id),
+        "workspace_id": str(status.workspace_id),
+        "user_id": str(status.user_id),
+        "status": status.status,
         "files": [
-            serialize_upload_status_file(file) for file in status.get("files", [])
+            serialize_upload_status_file(file) for file in status.files
         ],
-        "logs": status.get("logs", []),
-        "created_at": status["created_at"].isoformat(),
-        "updated_at": status["updated_at"].isoformat(),
-        "completed_at": status["completed_at"].isoformat()
-        if status.get("completed_at")
+        "logs": status.logs,
+        "created_at": status.created_at.isoformat(),
+        "updated_at": status.updated_at.isoformat(),
+        "completed_at": status.completed_at.isoformat()
+        if status.completed_at is not None
         else None,
-        "error": status.get("error"),
+        "error": status.error,
     }
 
 
-def serialize_workspace(workspace: dict) -> dict:
+def serialize_workspace(workspace: Workspace) -> dict:
     return {
-        "id": str(workspace["_id"]),
-        "user_id": workspace["user_id"],
-        "name": workspace.get("name", "Untitled Workspace"),
-        "description": workspace.get("description", ""),
-        "tags": workspace.get("tags", []),
+        "id": str(workspace.id),
+        "user_id": str(workspace.user_id),
+        "name": workspace.name,
+        "description": workspace.description,
+        "tags": workspace.tags,
         "materials": [
-            serialize_material(material) for material in workspace.get("materials", [])
+            serialize_material(material) for material in workspace.materials
         ],
-        "created_at": workspace["created_at"].isoformat(),
+        "created_at": workspace.created_at.isoformat(),
     }
 
 
-def serialize_workspaces(workspaces: list[dict]) -> list[dict]:
+def serialize_workspaces(workspaces: list[Workspace]) -> list[dict]:
     return [serialize_workspace(workspace) for workspace in workspaces]
 
 
-def serialize_session(session: dict) -> dict:
+def serialize_session(session: Session) -> dict:
     return {
-        "id": str(session["_id"]),
-        "workspace_id": session["workspace_id"],
-        "name": session.get("name", "Untitled Session"),
-        "message_count": len(session.get("messages", [])),
-        "created_at": session["created_at"].isoformat(),
+        "id": str(session.id),
+        "workspace_id": str(session.workspace_id),
+        "name": session.name,
+        "message_count": len(session.messages),
+        "created_at": session.created_at.isoformat(),
     }
 
 
-def serialize_sessions(sessions: list[dict]) -> list[dict]:
+def serialize_sessions(sessions: list[Session]) -> list[dict]:
     return [serialize_session(session) for session in sessions]
 
 
@@ -86,13 +89,13 @@ def serialize_session_message(message: dict, index: int) -> dict:
     }
 
 
-def serialize_session_messages(session: dict) -> dict:
-    messages = session.get("messages", [])
+def serialize_session_messages(session: Session) -> dict:
+    messages = session.messages
     return {
-        "id": str(session["_id"]),
-        "workspace_id": session["workspace_id"],
-        "name": session.get("name", "Untitled Session"),
-        "created_at": session["created_at"].isoformat(),
+        "id": str(session.id),
+        "workspace_id": str(session.workspace_id),
+        "name": session.name,
+        "created_at": session.created_at.isoformat(),
         "messages": [
             serialize_session_message(msg, i) for i, msg in enumerate(messages)
         ],

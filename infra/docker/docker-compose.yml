@@ -3,11 +3,11 @@ services:
   #   container_name: ragify-api
   #   build: ./api/Dockerfile
   #   env_file:
-  #     - ./api/.env
+  #     - ../../.env
   #   ports:
   #     - "1337:${PORT}"
   #   environment:
-  #     - MONGODB_URI: ${MONGODB_URI}
+  #     - DATABASE_URL: ${DATABASE_URL}
   #   depends_on:
   #     - database
   #   restart: unless-stopped
@@ -23,27 +23,36 @@ services:
 
   db:
     container_name: ragify-db
-    image: mongo:8.2.3
+    image: postgres:16.10-alpine
+    env_file:
+      - ../../.env
     ports:
-      - "${MONGO_PORT}:27017"
+      - "${POSTGRES_PORT:-5432}:5432"
 
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-myuser}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-mypassword}
+      POSTGRES_USER: ${POSTGRES_USER:-ragify}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ragify}
+      POSTGRES_DB: ${POSTGRES_DB:-ragify}
 
     volumes:
-      - ../volumes/mongo:/data/db
-      - ../configs/mongo/mongod.conf:/etc/mongo/mongod.conf
-      - ../configs/mongo/init.js:/docker-entrypoint-initdb.d/init.js
+      - ../volumes/postgres:/var/lib/postgresql/data
 
-    command: ["mongod", "--config", "/etc/mongo/mongod.conf"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ragify} -d ${POSTGRES_DB:-ragify}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    restart: unless-stopped
 
   vector_db:
     container_name: ragify_qdrant
     image: qdrant/qdrant:v1.17
+    env_file:
+      - ../../.env
     ports:
-      - "${QDRANT_HTTP_PORT}:6333"
-      - "${QDRANT_GRPC_PORT}:6334"
+      - "${QDRANT_HTTP_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
     volumes:
       - ../volumes/qdrant:/qdrant/storage
       - ../configs/qdrant.yaml:/qdrant/config/config.yaml
