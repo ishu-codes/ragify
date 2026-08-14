@@ -1,7 +1,5 @@
+from apps.api.src.auth.models import User
 
-def serialize_user(user: dict) -> dict:
-    return {
-        "id": str(user.id),
-        "name": user.name,
-        "email": user.email
-    }
+
+def serialize_user(user: User) -> dict[str, int | str]:
+    return {"id": user.id, "name": user.name, "email": user.email}

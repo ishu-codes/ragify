@@ -10,7 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from apps.api.src.auth.controller import router as auth_router
-from apps.api.src.config.db import close_database_connection, connect_to_database
+from apps.api.src.config.db import (
+    close_database_connection,
+    connect_to_database,
+    db_manager,
+)
 from apps.api.src.config.response import failure
 from apps.api.src.workspace.controller import router as workspace_router
 
@@ -24,6 +28,7 @@ def _get_cors_origins() -> list[str]:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.db_manager = db_manager
     await connect_to_database()
     yield
     await close_database_connection()

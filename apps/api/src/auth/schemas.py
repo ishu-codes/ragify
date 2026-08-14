@@ -1,25 +1,39 @@
-
-from typing import Optional
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from pydantic.config import ConfigDict
 
 
-class User(BaseModel):
-    id: Optional[str] = Field(alias="_id")
+class UserInfo(BaseModel):
+    id: int
+    name: str
+    email: str
+
+
+# Login
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    user: UserInfo
+    access_token: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Register
+
+
+class RegisterRequest(BaseModel):
     name: str
     email: str
     password: str
 
-class LoginBody(BaseModel):
-    email: str
-    password: str
 
-class RegisterBody(BaseModel):
-    name: str
-    email: str
-    password: str
+class RegisterResponse(BaseModel):
+    user: UserInfo
+    access_token: str
 
-class UserDto(BaseModel):
-    id: str
-    name: str
-    email: str
+    model_config = ConfigDict(from_attributes=True)

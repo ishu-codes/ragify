@@ -1,6 +1,4 @@
 from datetime import datetime
-from uuid import UUID
-
 from sqlalchemy import DateTime, ForeignKey, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -11,7 +9,7 @@ from ..config.models import BaseModel
 class Workspace(BaseModel):
     __tablename__ = "workspaces"
 
-    user_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
     )
     name: Mapped[str] = mapped_column(String(255), default="Untitled Workspace")
@@ -27,7 +25,7 @@ class Workspace(BaseModel):
 class Session(BaseModel):
     __tablename__ = "sessions"
 
-    workspace_id: Mapped[UUID] = mapped_column(
+    workspace_id: Mapped[int] = mapped_column(
         ForeignKey("workspaces.id", ondelete="CASCADE"), index=True, nullable=False
     )
     name: Mapped[str] = mapped_column(String(255), default="Untitled Session")
@@ -39,10 +37,10 @@ class Session(BaseModel):
 class UploadStatus(BaseModel):
     __tablename__ = "upload_statuses"
 
-    workspace_id: Mapped[UUID] = mapped_column(
+    workspace_id: Mapped[int] = mapped_column(
         ForeignKey("workspaces.id", ondelete="CASCADE"), index=True, nullable=False
     )
-    user_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
     )
     status: Mapped[str] = mapped_column(String(50), default="uploaded")

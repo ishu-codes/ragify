@@ -5,14 +5,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
-from src.utils.threads import run_in_threads
+from sqlalchemy.ext.asyncio.session import AsyncSession
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from fastapi import HTTPException, UploadFile
 from langchain_core.messages import AIMessage, HumanMessage, messages_from_dict
 
-from src.utils.files import ensure_dir
+from src.utils.files import ensure_dir, remove_dir
 
 from .repository import SessionRepository, UploadRepository, WorkspaceRepository
 from .serializer import (
@@ -61,8 +61,8 @@ def _upload_log(status_id: str, message: str):
     print(f"[upload:{status_id}] {message}")
 
 
-async def _append_upload_log(status_id: str, message: str):
-    status = await UploadRepository.get_upload_status_by_id(status_id)
+async def _append_upload_log(db: AsyncSession, status_id: int, message: str):
+    status = await UploadRepository.get_upload_status_by_id(db, status_id)
     if status is None:
         return
 
@@ -75,7 +75,7 @@ async def _append_upload_log(status_id: str, message: str):
 
 
 async def _set_file_status(
-    status_id: str, file_id: str, next_status: str, error: str | None = None
+    status_id: int, file_id: int, next_status: str, error: str | None = None
 ):
     status = await UploadRepository.get_upload_status_by_id(status_id)
     if status is None:
@@ -91,13 +91,13 @@ async def _set_file_status(
     await UploadRepository.update_upload_status(status_id, {"files": next_files})
 
 
-async def _ensure_workspace_access(workspace_id: str, user_id: str):
-    workspace = await WorkspaceRepository.get_workspace_by_id(workspace_id)
+async def _ensure_workspace_access(db: AsyncSession, workspace_id: int, user_id: int):
+    workspace = await WorkspaceRepository.get_workspace_by_id(db, workspace_id)
 
     if workspace is None:
         raise HTTPException(status_code=404, detail="Workspace could not be found")
 
-    if str(workspace.user_id) != user_id:
+    if workspace.user_id != user_id:
         raise HTTPException(status_code=403, detail="Workspace access denied")
 
     return workspace
@@ -129,7 +129,7 @@ def _convert_file_to_markdown(storage_path: str) -> str:
 
 
 async def _process_pdf_files(
-    status_id: str, workspace_id: str, upload_dir: str, files: list[dict]
+    status_id: int, workspace_id: int, upload_dir: str, files: list[dict]
 ) -> tuple[int, int]:
     from src.ragify.ingestion.grobid_ingestion import GrobidIngestor
 
@@ -141,7 +141,7 @@ async def _process_pdf_files(
         for file in files:
             await _set_file_status(status_id, file["id"], "completed")
             await _append_upload_log(
-                status_id, f"Successfully processed PDF: {file['name']}"
+                db, status_id, f"Successfully processed PDF: {file['name']}"
             )
         return len(files), 0
 
@@ -158,8 +158,8 @@ async def _process_pdf_files(
 
 
 async def _process_text_files(
-    status_id: str,
-    workspace_id: str,
+    status_id: int,
+    workspace_id: int,
     files: list[dict],
     *,
     read_content: Callable[[str], str],
@@ -213,7 +213,7 @@ async def _process_text_files(
 
 
 async def _finalize_upload_status(
-    status_id: str, successful_count: int, failed_count: int
+    status_id: int, successful_count: int, failed_count: int
 ):
     if successful_count > 0:
         await UploadRepository.update_upload_status(
@@ -253,22 +253,22 @@ async def _finalize_upload_status(
         await _append_upload_log(status_id, "Upload failed: no files were processed")
 
 
-async def _process_uploaded_files(status_id: str, workspace_id: str, upload_dir: str):
-    status = await UploadRepository.get_upload_status_by_id(status_id)
+async def _process_uploaded_files(db: AsyncSession, status_id: int, workspace_id: int, upload_dir: str):
+    status = await UploadRepository.get_upload_status_by_id(db, status_id)
     if status is None:
         return
 
     await UploadRepository.update_upload_status(
-        status_id, {"status": "processing", "error": None}
+        db, status_id, {"status": "processing", "error": None}
     )
-    await _append_upload_log(status_id, "Starting background file processing")
+    await _append_upload_log(db, status_id, "Starting background file processing")
 
     successful_count = 0
     failed_count = 0
 
     for file_type, files in _group_files_by_type(status.files).items():
         await _append_upload_log(
-            status_id, f"Processing {len(files)} {file_type} file(s)"
+            db, status_id, f"Processing {len(files)} {file_type} file(s)"
         )
 
         if file_type == "pdf":
@@ -305,53 +305,53 @@ async def _process_uploaded_files(status_id: str, workspace_id: str, upload_dir:
 
 class WorkspaceService:
     @staticmethod
-    async def get_workspaces(user_id: str):
-        if not user_id:
-            _invalid_userId()
-
-        workspaces = await WorkspaceRepository.get_all_workspaces(user_id)
-        return serialize_workspaces(workspaces)
+    async def get_workspaces(db: AsyncSession, user_id: int):
+        return await WorkspaceRepository.get_all_workspaces(db, user_id)
+        # return serialize_workspaces(workspaces)
 
     @staticmethod
-    async def get_workspace(workspace_id: str, user_id: str):
-        workspace = await _ensure_workspace_access(workspace_id, user_id)
-        return serialize_workspace(workspace)
+    async def get_workspace(db: AsyncSession, workspace_id: int, user_id: int):
+        return await _ensure_workspace_access(db, workspace_id, user_id)
+        # return serialize_workspace(workspace)
 
     @staticmethod
-    async def create_workspace(user_id: str):
-        if not user_id:
-            _invalid_userId()
+    async def create_workspace(db: AsyncSession, user_id: int):
+        workspace = await WorkspaceRepository.create_new_workspace(db, user_id)
+        await db.commit()
+        await db.refresh(workspace)
 
-        workspace = await WorkspaceRepository.create_new_workspace(user_id)
         print(workspace)
         if workspace:
             from src.ragify.retrieval import vector_store_manager
 
             vector_store_manager.create_collection(str(workspace.id))
-        return serialize_workspace(workspace)
+        return workspace
 
     @staticmethod
     async def update_workspace_details(
-        workspace_id: str, user_id: str, name: str, description: str, tags: list[str]
+        db: AsyncSession,
+        workspace_id: int,
+        user_id: int,
+        name: str,
+        description: str,
+        tags: list[str],
     ):
-        await _ensure_workspace_access(workspace_id, user_id)
-        workspace = await WorkspaceRepository.update_workspace(
-            workspace_id, _normalize_workspace_updates(name, description, tags)
+        workspace = await _ensure_workspace_access(db, workspace_id, user_id)
+        await WorkspaceRepository.update_workspace(
+            workspace, updates=_normalize_workspace_updates(name, description, tags)
         )
-        return serialize_workspace(workspace)
+        await db.commit()
+        await db.refresh(workspace)
+        return workspace
 
     @staticmethod
-    async def remove_workspace(workspace_id: str, user_id: str):
-        await _ensure_workspace_access(workspace_id, user_id)
-        await WorkspaceRepository.delete_workspace(workspace_id)
-        await WorkspaceRepository.delete_workspace_sessions(workspace_id)
+    async def remove_workspace(db: AsyncSession, workspace_id: int, user_id: int):
+        await _ensure_workspace_access(db, workspace_id, user_id)
+        await WorkspaceRepository.delete_workspace(db, workspace_id)
+        db.commit()
 
-        upload_dir = _workspace_upload_dir(workspace_id)
-        if upload_dir.exists():
-            for child in upload_dir.iterdir():
-                if child.is_file():
-                    child.unlink()
-            upload_dir.rmdir()
+        upload_dir = _workspace_upload_dir(str(workspace_id))
+        remove_dir(str(upload_dir))
 
         return {"id": workspace_id}
 
@@ -361,31 +361,35 @@ class WorkspaceService:
 
 class SessionService:
     @staticmethod
-    async def get_workspace_sessions(workspace_id: str, user_id: str):
-        await _ensure_workspace_access(workspace_id, user_id)
-        sessions = await SessionRepository.get_sessions_by_workspace_id(workspace_id)
-        return serialize_sessions(sessions)
+    async def get_workspace_sessions(db: AsyncSession, workspace_id: int, user_id: int):
+        await _ensure_workspace_access(db, workspace_id, user_id)
+        return await SessionRepository.get_sessions_by_workspace_id(db, workspace_id)
 
     @staticmethod
-    async def get_session_messages(workspace_id: str, session_id: str, user_id: str):
-        await _ensure_workspace_access(workspace_id, user_id)
+    async def get_session_messages(
+        db: AsyncSession, workspace_id: int, session_id: int, user_id: int
+    ):
+        await _ensure_workspace_access(db, workspace_id, user_id)
 
-        session = await SessionRepository.get_session_by_id(session_id)
-        if session is None or str(session.workspace_id) != workspace_id:
+        session = await SessionRepository.get_session_by_id(db, session_id)
+        if session is None or session.workspace_id != workspace_id:
             raise HTTPException(status_code=404, detail="Session could not be found")
-
-        return serialize_session_messages(session)
+        return session
 
     @staticmethod
     async def query_rag(
-        workspace_id: str, user_id: str, session_id: str | None, query: str
+        db: AsyncSession,
+        workspace_id: int,
+        user_id: int,
+        session_id: int | None,
+        query: str,
     ):
-        await _ensure_workspace_access(workspace_id, user_id)
+        await _ensure_workspace_access(db, workspace_id, user_id)
 
         if not session_id:
-            session = await SessionRepository.create_session(workspace_id)
+            session = await SessionRepository.create_session(db, workspace_id)
         else:
-            session = await SessionRepository.get_session_by_id(session_id)
+            session = await SessionRepository.get_session_by_id(db, session_id)
 
         if session is None:
             raise HTTPException(status_code=404, detail="Session could not be found")
@@ -401,9 +405,11 @@ class SessionService:
         output_text = result["messages"][-1].content
         chat_messages.append(AIMessage(content=output_text))
 
-        await SessionRepository.update_messages(str(session.id), chat_messages)
+        await SessionRepository.update_messages(session, chat_messages)
+        await db.commit()
+        await db.refresh(session)
         return {
-            "session_id": str(session.id),
+            "session_id": session.id,
             "session_name": session.name,
             "created_at": session.created_at.isoformat(),
             "answer": output_text,
@@ -411,38 +417,42 @@ class SessionService:
 
     @staticmethod
     async def rename_session(
-        workspace_id: str, session_id: str, user_id: str, name: str
+        db: AsyncSession, workspace_id: int, session_id: int, user_id: int, name: str
     ):
-        await _ensure_workspace_access(workspace_id, user_id)
+        await _ensure_workspace_access(db, workspace_id, user_id)
 
         normalized_name = name.strip()
         if not normalized_name:
             raise HTTPException(status_code=400, detail="Session name is required")
 
-        session = await SessionRepository.get_session_by_id(session_id)
-        if session is None or str(session.workspace_id) != workspace_id:
+        session = await SessionRepository.get_session_by_id(db, session_id)
+        if session is None or session.workspace_id != workspace_id:
             raise HTTPException(status_code=404, detail="Session could not be found")
 
-        session = await SessionRepository.update_session(
-            session_id, {"name": normalized_name}
-        )
-        return serialize_session(session)
+        await SessionRepository.update_session(session, {"name": normalized_name})
+        await db.commit()
+        await db.refresh(session)
+        return session
 
     @staticmethod
-    async def remove_session(workspace_id: str, session_id: str, user_id: str):
-        await _ensure_workspace_access(workspace_id, user_id)
+    async def remove_session(
+        db: AsyncSession, workspace_id: int, session_id: int, user_id: int
+    ):
+        await _ensure_workspace_access(db, workspace_id, user_id)
 
-        session = await SessionRepository.get_session_by_id(session_id)
-        if session is None or str(session.workspace_id) != workspace_id:
+        session = await SessionRepository.get_session_by_id(db, session_id)
+        if session is None or session.workspace_id != workspace_id:
             raise HTTPException(status_code=404, detail="Session could not be found")
 
-        await SessionRepository.delete_session(session_id)
+        await SessionRepository.delete_session(db, session_id)
+        await db.commit()
         return {"id": session_id}
 
     @staticmethod
-    async def remove_all_sessions(workspace_id: str, user_id: str):
-        await _ensure_workspace_access(workspace_id, user_id)
-        await WorkspaceRepository.delete_workspace_sessions(workspace_id)
+    async def remove_all_sessions(db: AsyncSession, workspace_id: int, user_id: int):
+        await _ensure_workspace_access(db, workspace_id, user_id)
+        await WorkspaceRepository.delete_workspace_sessions(db, workspace_id)
+        await db.commit()
         return {"workspace_id": workspace_id}
 
 
@@ -451,20 +461,23 @@ class SessionService:
 
 class UploadService:
     @staticmethod
-    async def get_upload_status(workspace_id: str, status_id: str, user_id: str):
-        await _ensure_workspace_access(workspace_id, user_id)
-        status = await UploadRepository.get_upload_status_by_id(status_id)
+    async def get_upload_status(
+        db: AsyncSession, workspace_id: int, status_id: int, user_id: int
+    ):
+        await _ensure_workspace_access(db, workspace_id, user_id)
+        status = await UploadRepository.get_upload_status_by_id(db, status_id)
 
         if (
             status is None
-            or str(status.workspace_id) != workspace_id
-            or str(status.user_id) != user_id
+            or status.workspace_id != workspace_id
+            or status.user_id != user_id
         ):
             raise HTTPException(
                 status_code=404, detail="Upload status could not be found"
             )
 
-        return serialize_upload_status(status)
+        return status
+        # return serialize_upload_status(status)
 
     @staticmethod
     async def determine_type_and_save_doc(file: UploadFile, upload_dir: Path):
@@ -502,15 +515,15 @@ class UploadService:
             print(f"[upload] failed receiving {file.filename}: {err}")
 
     @staticmethod
-    async def upload_docs(
-        workspace_id: str, user_id: str, files: list[UploadFile] | None
+    async def upload_docs(db: AsyncSession,
+        workspace_id: int, user_id: int, files: list[UploadFile] | None
     ):
-        await _ensure_workspace_access(workspace_id, user_id)
+        await _ensure_workspace_access(db, workspace_id, user_id)
 
         if not files:
             raise HTTPException(status_code=400, detail="No documents provided")
 
-        upload_dir = _workspace_upload_dir(workspace_id)
+        upload_dir = _workspace_upload_dir(str(workspace_id))
         ensure_dir(str(upload_dir))
 
         # material_records = filter(
@@ -540,17 +553,16 @@ class UploadService:
             )
 
         status = await UploadRepository.create_upload_status(
-            workspace_id, user_id, material_records
+            db, workspace_id, user_id, material_records
         )
-        status_id = str(status.id)
         await _append_upload_log(
-            status_id, f"Received {len(material_records)} files from client"
+            db, status.id, f"Received {len(material_records)} files from client"
         )
         asyncio.create_task(
-            _process_uploaded_files(status_id, workspace_id, str(upload_dir))
+            _process_uploaded_files(db, status.id, workspace_id, str(upload_dir))
         )
 
         return {
-            "status_id": status_id,
+            "status_id": status.id,
             "message": f"Uploaded {len(material_records)} files. Processing started.",
         }
