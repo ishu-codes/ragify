@@ -6,6 +6,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
@@ -15,7 +16,6 @@ from apps.api.src.config.db import (
     connect_to_database,
     db_manager,
 )
-from apps.api.src.config.response import failure
 from apps.api.src.workspace.controller import router as workspace_router
 
 load_dotenv()
@@ -49,12 +49,14 @@ app.add_middleware(
 # Exception handlers
 @app.exception_handler(HTTPException)
 async def global_http_exception_handler(_: Request, exception: HTTPException):
-    return failure(str(exception.detail), exception.status_code)
+    return JSONResponse(
+        status_code=exception.status_code, content={"detail": exception.detail}
+    )
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(_: Request, exception: Exception):
-    return failure(str(exception), 500)
+    return JSONResponse(status_code=500, content={"detail": str(exception)})
 
 
 @app.get("/")

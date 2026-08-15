@@ -14,15 +14,8 @@ from langchain_core.messages import AIMessage, HumanMessage, messages_from_dict
 
 from src.utils.files import ensure_dir, remove_dir
 
+from ..config.db import async_session_maker
 from .repository import SessionRepository, UploadRepository, WorkspaceRepository
-from .serializer import (
-    serialize_session,
-    serialize_session_messages,
-    serialize_sessions,
-    serialize_upload_status,
-    serialize_workspace,
-    serialize_workspaces,
-)
 from .utils import replace_extension
 
 _magika = None
@@ -53,11 +46,16 @@ def _normalize_workspace_updates(name: str, description: str, tags: list[str]) -
     }
 
 
-def _workspace_upload_dir(workspace_id: str) -> Path:
-    return Path(__file__).resolve().parents[2] / "storage" / "workspaces" / workspace_id
+def _workspace_upload_dir(workspace_id: int) -> Path:
+    return (
+        Path(__file__).resolve().parents[2]
+        / "storage"
+        / "workspaces"
+        / str(workspace_id)
+    )
 
 
-def _upload_log(status_id: str, message: str):
+def _upload_log(status_id: int, message: str):
     print(f"[upload:{status_id}] {message}")
 
 
@@ -70,14 +68,18 @@ async def _append_upload_log(db: AsyncSession, status_id: int, message: str):
         *status.logs,
         {"message": message, "created_at": datetime.now(UTC).isoformat()},
     ]
-    await UploadRepository.update_upload_status(status_id, {"logs": logs})
+    await UploadRepository.update_upload_status(status, {"logs": logs})
     _upload_log(status_id, message)
 
 
 async def _set_file_status(
-    status_id: int, file_id: int, next_status: str, error: str | None = None
+    db: AsyncSession,
+    status_id: int,
+    file_id: str,
+    next_status: str,
+    error: str | None = None,
 ):
-    status = await UploadRepository.get_upload_status_by_id(status_id)
+    status = await UploadRepository.get_upload_status_by_id(db, status_id)
     if status is None:
         return
 
@@ -88,7 +90,7 @@ async def _set_file_status(
         else:
             next_files.append(file)
 
-    await UploadRepository.update_upload_status(status_id, {"files": next_files})
+    await UploadRepository.update_upload_status(status, {"files": next_files})
 
 
 async def _ensure_workspace_access(db: AsyncSession, workspace_id: int, user_id: int):
@@ -129,17 +131,21 @@ def _convert_file_to_markdown(storage_path: str) -> str:
 
 
 async def _process_pdf_files(
-    status_id: int, workspace_id: int, upload_dir: str, files: list[dict]
+    db: AsyncSession,
+    status_id: int,
+    workspace_id: int,
+    upload_dir: str,
+    files: list[dict],
 ) -> tuple[int, int]:
     from src.ragify.ingestion.grobid_ingestion import GrobidIngestor
 
     try:
-        ingestor = GrobidIngestor(workspace_id, upload_dir)
+        ingestor = GrobidIngestor(str(workspace_id), upload_dir)
         ingestor.ingest()
 
         # PDFs processed successfully - update all PDF file statuses
         for file in files:
-            await _set_file_status(status_id, file["id"], "completed")
+            await _set_file_status(db, status_id, file["id"], "completed")
             await _append_upload_log(
                 db, status_id, f"Successfully processed PDF: {file['name']}"
             )
@@ -149,8 +155,9 @@ async def _process_pdf_files(
         # Grobid processing failed - mark all PDFs as failed
         error_msg = str(exc)
         for file in files:
-            await _set_file_status(status_id, file["id"], "failed", error_msg)
+            await _set_file_status(db, status_id, file["id"], "failed", error_msg)
             await _append_upload_log(
+                db,
                 status_id,
                 f"Failed to process PDF {file['name']}: {error_msg}",
             )
@@ -158,6 +165,7 @@ async def _process_pdf_files(
 
 
 async def _process_text_files(
+    db: AsyncSession,
     status_id: int,
     workspace_id: int,
     files: list[dict],
@@ -194,16 +202,18 @@ async def _process_text_files(
             # Index chunks
             vector_store_manager.insert_documents(workspace_id, file_chunks)
 
-            await _set_file_status(status_id, file["id"], "completed")
+            await _set_file_status(db, status_id, file["id"], "completed")
             await _append_upload_log(
+                db,
                 status_id,
                 f"Successfully processed {file_label} file: {file['name']} ({len(chunks)} chunks)",
             )
             successful_count += 1
 
         except Exception as exc:
-            await _set_file_status(status_id, file["id"], "failed", str(exc))
+            await _set_file_status(db, status_id, file["id"], "failed", str(exc))
             await _append_upload_log(
+                db,
                 status_id,
                 f"Failed to process {file_label} file {file['name']}: {exc}",
             )
@@ -213,11 +223,15 @@ async def _process_text_files(
 
 
 async def _finalize_upload_status(
-    status_id: int, successful_count: int, failed_count: int
+    db: AsyncSession, status_id: int, successful_count: int, failed_count: int
 ):
+    status = await UploadRepository.get_upload_status_by_id(db, status_id)
+    if status is None:
+        return
+
     if successful_count > 0:
         await UploadRepository.update_upload_status(
-            status_id,
+            status,
             {
                 "status": "completed",
                 "completed_at": datetime.now(UTC),
@@ -225,12 +239,13 @@ async def _finalize_upload_status(
             },
         )
         await _append_upload_log(
+            db,
             status_id,
             f"Upload completed: {successful_count} file(s) processed successfully, {failed_count} failed",
         )
     elif failed_count > 0:
         await UploadRepository.update_upload_status(
-            status_id,
+            status,
             {
                 "status": "failed",
                 "completed_at": datetime.now(UTC),
@@ -238,28 +253,33 @@ async def _finalize_upload_status(
             },
         )
         await _append_upload_log(
+            db,
             status_id,
             f"Upload failed: all {failed_count} file(s) failed to process",
         )
     else:
         await UploadRepository.update_upload_status(
-            status_id,
+            status,
             {
                 "status": "failed",
                 "completed_at": datetime.now(UTC),
                 "error": "No files were processed",
             },
         )
-        await _append_upload_log(status_id, "Upload failed: no files were processed")
+        await _append_upload_log(
+            db, status_id, "Upload failed: no files were processed"
+        )
 
 
-async def _process_uploaded_files(db: AsyncSession, status_id: int, workspace_id: int, upload_dir: str):
+async def _process_uploaded_files(
+    db: AsyncSession, status_id: int, workspace_id: int, upload_dir: str
+):
     status = await UploadRepository.get_upload_status_by_id(db, status_id)
     if status is None:
         return
 
     await UploadRepository.update_upload_status(
-        db, status_id, {"status": "processing", "error": None}
+        status, {"status": "processing", "error": None}
     )
     await _append_upload_log(db, status_id, "Starting background file processing")
 
@@ -273,10 +293,11 @@ async def _process_uploaded_files(db: AsyncSession, status_id: int, workspace_id
 
         if file_type == "pdf":
             successful, failed = await _process_pdf_files(
-                status_id, workspace_id, upload_dir, files
+                db, status_id, workspace_id, upload_dir, files
             )
         elif file_type == "md":
             successful, failed = await _process_text_files(
+                db,
                 status_id,
                 workspace_id,
                 files,
@@ -286,6 +307,7 @@ async def _process_uploaded_files(db: AsyncSession, status_id: int, workspace_id
             )
         else:
             successful, failed = await _process_text_files(
+                db,
                 status_id,
                 workspace_id,
                 files,
@@ -297,7 +319,14 @@ async def _process_uploaded_files(db: AsyncSession, status_id: int, workspace_id
         successful_count += successful
         failed_count += failed
 
-    await _finalize_upload_status(status_id, successful_count, failed_count)
+    await _finalize_upload_status(db, status_id, successful_count, failed_count)
+    await db.commit()
+
+
+async def _run_upload_processing(status_id: int, workspace_id: int, upload_dir: str):
+    """Process uploaded files in a background task with its own DB session."""
+    async with async_session_maker() as db:
+        await _process_uploaded_files(db, status_id, workspace_id, upload_dir)
 
 
 # Workspace Service
@@ -345,12 +374,12 @@ class WorkspaceService:
         return workspace
 
     @staticmethod
-    async def remove_workspace(db: AsyncSession, workspace_id: int, user_id: int):
+    async def delete_workspace(db: AsyncSession, workspace_id: int, user_id: int):
         await _ensure_workspace_access(db, workspace_id, user_id)
         await WorkspaceRepository.delete_workspace(db, workspace_id)
-        db.commit()
+        await db.commit()
 
-        upload_dir = _workspace_upload_dir(str(workspace_id))
+        upload_dir = _workspace_upload_dir(workspace_id)
         remove_dir(str(upload_dir))
 
         return {"id": workspace_id}
@@ -380,9 +409,9 @@ class SessionService:
     async def query_rag(
         db: AsyncSession,
         workspace_id: int,
-        user_id: int,
         session_id: int | None,
         query: str,
+        user_id: int,
     ):
         await _ensure_workspace_access(db, workspace_id, user_id)
 
@@ -515,15 +544,18 @@ class UploadService:
             print(f"[upload] failed receiving {file.filename}: {err}")
 
     @staticmethod
-    async def upload_docs(db: AsyncSession,
-        workspace_id: int, user_id: int, files: list[UploadFile] | None
+    async def upload_docs(
+        db: AsyncSession,
+        workspace_id: int,
+        user_id: int,
+        files: list[UploadFile] | None,
     ):
         await _ensure_workspace_access(db, workspace_id, user_id)
 
         if not files:
             raise HTTPException(status_code=400, detail="No documents provided")
 
-        upload_dir = _workspace_upload_dir(str(workspace_id))
+        upload_dir = _workspace_upload_dir(workspace_id)
         ensure_dir(str(upload_dir))
 
         # material_records = filter(
@@ -555,11 +587,13 @@ class UploadService:
         status = await UploadRepository.create_upload_status(
             db, workspace_id, user_id, material_records
         )
+        await db.commit()
+        await db.refresh(status)
         await _append_upload_log(
             db, status.id, f"Received {len(material_records)} files from client"
         )
         asyncio.create_task(
-            _process_uploaded_files(db, status.id, workspace_id, str(upload_dir))
+            _run_upload_processing(status.id, workspace_id, str(upload_dir))
         )
 
         return {

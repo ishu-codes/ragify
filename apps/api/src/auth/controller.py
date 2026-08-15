@@ -2,26 +2,29 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config.db import get_session
-from ..config.response import success
-from .schemas import LoginRequest, LoginResponse, RegisterRequest, RegisterResponse
+from .schemas import (
+    LoginRequest,
+    LoginResponse,
+    RegisterRequest,
+    RegisterResponse,
+    UserInfo,
+)
 from .service import AuthService
 from .utils import authenticated_user, require_auth
 
 router = APIRouter()
 
 
-@router.post("/register", response_model=RegisterResponse)
+@router.post("/register", response_model=RegisterResponse, status_code=201)
 async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_session)):
-    result = await AuthService.register_user(db, payload)
-    return success(result, 201)
+    return await AuthService.register_user(db, payload)
 
 
 @router.post("/login", response_model=LoginResponse)
 async def login(payload: LoginRequest, db: AsyncSession = Depends(get_session)):
-    result = await AuthService.login_user(db, payload)
-    return success(result)
+    return await AuthService.login_user(db, payload)
 
 
-@router.get("/session", dependencies=[Depends(require_auth)])
+@router.get("/session", response_model=UserInfo, dependencies=[Depends(require_auth)])
 async def session(request: Request):
-    return success({"user": authenticated_user(request)})
+    return authenticated_user(request)

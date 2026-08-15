@@ -3,7 +3,6 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from .repository import create_user, find_user_by_email
 from .schemas import LoginRequest, RegisterRequest
-from .serializer import serialize_user
 from .utils import create_access_token, hash_password, verify_password
 
 
@@ -27,7 +26,7 @@ class AuthService:
         await db.refresh(user)
 
         return {
-            "user": serialize_user(user),
+            "user": user,
             "access_token": create_access_token(user),
         }
 
@@ -43,6 +42,6 @@ class AuthService:
             _invalid_credentials()
 
         return {
-            "user": serialize_user(user),
+            "user": user,
             "access_token": create_access_token(user),
         }

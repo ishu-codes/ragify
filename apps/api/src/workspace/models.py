@@ -33,6 +33,10 @@ class Session(BaseModel):
         JSONB, default=list, server_default=text("'[]'::jsonb")
     )
 
+    @property
+    def message_count(self) -> int:
+        return len(self.messages)
+
 
 class UploadStatus(BaseModel):
     __tablename__ = "upload_statuses"

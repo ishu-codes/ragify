@@ -98,3 +98,8 @@ def authenticated_user(request: Request) -> dict[str, str | int]:
         raise HTTPException(status_code=401, detail="Authentication required")
 
     return user
+
+
+def get_current_user_id(request: Request) -> int:
+    """Dependency that returns the authenticated user's id."""
+    return int(authenticated_user(request)["id"])
