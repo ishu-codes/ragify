@@ -5,12 +5,6 @@ const API_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000
 const API_VERSION = (import.meta as any).env?.VITE_API_VERSION || "v1";
 const API_PREFIX = `${API_URL}/api/${API_VERSION}/`;
 
-type ApiEnvelope<T> = {
-  success: boolean;
-  data: T;
-  error?: string;
-};
-
 type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: BodyInit | object;
@@ -53,13 +47,14 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     body: requestBody,
   });
 
-  const payload = (await response.json().catch(() => null)) as ApiEnvelope<T> | null;
+  const payload = (await response.json().catch(() => null)) as T | null;
 
-  if (!response.ok || payload?.success === false || !payload) {
-    throw new Error(payload?.error ?? `Request failed with status ${response.status}`);
+  if (!response.ok || !payload) {
+    const detail = (payload as { detail?: string } | null)?.detail;
+    throw new Error(detail ?? `Request failed with status ${response.status}`);
   }
 
-  return payload.data;
+  return payload;
 }
 
 export const api = {

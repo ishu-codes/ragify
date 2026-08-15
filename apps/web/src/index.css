@@ -146,107 +146,129 @@
 	}
 }
 
-/* Glassmorphism & Custom Aesthetic Utilities */
-.glass-card {
-	background: rgba(255, 255, 255, 0.65);
-	backdrop-filter: blur(16px);
-	-webkit-backdrop-filter: blur(16px);
-	border: 1px solid rgba(255, 255, 255, 0.4);
+/* Markdown content rendered in chat responses */
+.markdown-body {
+	color: inherit;
+	font-size: inherit;
+	line-height: 1.7;
+	overflow-wrap: anywhere;
 }
 
-.dark .glass-card {
-	background: rgba(18, 18, 26, 0.65);
-	backdrop-filter: blur(16px);
-	-webkit-backdrop-filter: blur(16px);
-	border: 1px solid rgba(255, 255, 255, 0.08);
+.markdown-body > *:first-child {
+	margin-top: 0;
 }
 
-.glass-nav {
-	background: rgba(255, 255, 255, 0.75);
-	backdrop-filter: blur(12px);
-	-webkit-backdrop-filter: blur(12px);
-	border-bottom: 1px solid rgba(229, 231, 235, 0.6);
+.markdown-body > *:last-child {
+	margin-bottom: 0;
 }
 
-.dark .glass-nav {
-	background: rgba(10, 10, 15, 0.75);
-	backdrop-filter: blur(12px);
-	-webkit-backdrop-filter: blur(12px);
-	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+.markdown-body p,
+.markdown-body ul,
+.markdown-body ol,
+.markdown-body pre,
+.markdown-body blockquote,
+.markdown-body table {
+	margin: 0.75em 0;
 }
 
-.text-gradient-purple {
-	background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%);
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	line-height: 1.3;
+	margin: 1.25em 0 0.5em;
 }
 
-.text-gradient-cyan {
-	background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #6366f1 100%);
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
+.markdown-body h1 {
+	font-size: 1.25em;
 }
 
-.text-gradient-gold {
-	background: linear-gradient(135deg, #f59e0b 0%, #eab308 50%, #f97316 100%);
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
+.markdown-body h2 {
+	font-size: 1.1em;
 }
 
-.glow-purple {
-	box-shadow: 0 0 40px -10px rgba(124, 58, 237, 0.3);
+.markdown-body h3,
+.markdown-body h4 {
+	font-size: 1em;
 }
 
-.glow-cyan {
-	box-shadow: 0 0 40px -10px rgba(6, 182, 212, 0.3);
+.markdown-body ul {
+	list-style: disc;
+	padding-left: 1.5em;
 }
 
-@keyframes float {
-	0%, 100% {
-		transform: translateY(0px) rotate(0deg);
-	}
-	50% {
-		transform: translateY(-8px) rotate(0.5deg);
-	}
+.markdown-body ol {
+	list-style: decimal;
+	padding-left: 1.5em;
 }
 
-@keyframes pulseGlow {
-	0%, 100% {
-		opacity: 0.4;
-		transform: scale(1);
-	}
-	50% {
-		opacity: 0.8;
-		transform: scale(1.05);
-	}
+.markdown-body li {
+	margin: 0.25em 0;
 }
 
-@keyframes shimmer {
-	100% {
-		transform: translateX(100%);
-	}
+.markdown-body a {
+	color: var(--primary);
+	text-decoration: underline;
+	text-underline-offset: 2px;
 }
 
-.animate-float {
-	animation: float 6s ease-in-out infinite;
+.markdown-body :not(pre) > code {
+	background: var(--muted);
+	border-radius: 0.375rem;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+	font-size: 0.875em;
+	padding: 0.15em 0.4em;
 }
 
-.animate-pulse-glow {
-	animation: pulseGlow 4s ease-in-out infinite;
+.markdown-body pre {
+	background: var(--muted);
+	border: 1px solid var(--border);
+	border-radius: 0.75rem;
+	overflow-x: auto;
+	padding: 0.9em 1em;
 }
 
-.bg-grid-pattern {
-	background-size: 32px 32px;
-	background-image: 
-		linear-gradient(to right, rgba(120, 120, 140, 0.07) 1px, transparent 1px),
-		linear-gradient(to bottom, rgba(120, 120, 140, 0.07) 1px, transparent 1px);
+.markdown-body pre code {
+	background: transparent;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+	font-size: 0.875em;
+	padding: 0;
 }
 
-.dark .bg-grid-pattern {
-	background-size: 32px 32px;
-	background-image: 
-		linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-		linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+.markdown-body blockquote {
+	border-left: 3px solid var(--border);
+	color: var(--muted-foreground);
+	padding-left: 1em;
+}
+
+.markdown-body table {
+	border-collapse: collapse;
+	font-size: 0.9em;
+	width: 100%;
+}
+
+.markdown-body th,
+.markdown-body td {
+	border: 1px solid var(--border);
+	padding: 0.4em 0.6em;
+	text-align: left;
+}
+
+.markdown-body th {
+	background: var(--muted);
+}
+
+.markdown-body hr {
+	border: none;
+	border-top: 1px solid var(--border);
+	margin: 1.25em 0;
+}
+
+.markdown-body img {
+	border-radius: 0.75rem;
+	max-width: 100%;
 }
 
 /* Custom Scrollbar */

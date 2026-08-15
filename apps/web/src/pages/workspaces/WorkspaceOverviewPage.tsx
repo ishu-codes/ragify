@@ -1,6 +1,15 @@
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Bot, FilesIcon, HistoryIcon, MessageSquareText, Settings2, TagsIcon, UploadCloud } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronRight,
+  FilesIcon,
+  HistoryIcon,
+  MessageSquareText,
+  Settings2,
+  TagsIcon,
+  UploadCloud,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,153 +42,138 @@ export default function WorkspaceOverviewPage() {
     enabled: Boolean(session?.accessToken && workspaceId),
   });
 
-  return (
-    <div className="space-y-6 p-6 lg:p-8">
-      <Card className="rounded-3xl border-primary/10 bg-linear-to-r from-primary/10 via-background to-background">
-        <CardContent className="flex flex-col gap-6 p-6 lg:flex-row lg:items-end lg:justify-between lg:p-8">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Link to="/workspaces" className="hover:text-foreground">
-                Workspaces
-              </Link>
-              <span>/</span>
-              <span>{workspaceId}</span>
-            </div>
+  const stats = [
+    { label: "Materials", value: workspaceQuery.data?.materials.length ?? 0, icon: FilesIcon },
+    { label: "Stored sessions", value: sessionsQuery.data?.length ?? 0, icon: HistoryIcon },
+    { label: "Local messages", value: chatSession.messages.length, icon: MessageSquareText },
+    { label: "Tags", value: workspaceQuery.data?.tags.length ?? 0, icon: TagsIcon },
+  ];
 
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-semibold tracking-tight">{workspaceQuery.data?.name ?? "Workspace"}</h1>
-              </div>
-              <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-                {workspaceQuery.data?.description && workspaceQuery.data?.description}
+  const actions = [
+    {
+      title: "Chat",
+      description: "Ask questions against the indexed documents in this workspace.",
+      href: `/workspaces/${workspaceId}/chat`,
+      icon: MessageSquareText,
+    },
+    {
+      title: "Upload",
+      description: "Add new source files and keep the material library up to date.",
+      href: `/workspaces/${workspaceId}/upload`,
+      icon: UploadCloud,
+    },
+    {
+      title: "History",
+      description: "Review, rename, and delete backend chat sessions for this workspace.",
+      href: `/workspaces/${workspaceId}/history`,
+      icon: HistoryIcon,
+    },
+    {
+      title: "Settings",
+      description: "Edit workspace metadata and clear the local browser chat cache.",
+      href: `/workspaces/${workspaceId}/settings`,
+      icon: Settings2,
+    },
+  ];
+
+  return (
+    <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      {/* HEADER */}
+      <header className="space-y-4">
+        <nav className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Link to="/workspaces" className="font-medium transition-colors hover:text-foreground">
+            Workspaces
+          </Link>
+          <ChevronRight className="size-3.5" />
+          <span className="max-w-56 truncate font-medium text-foreground">
+            {workspaceQuery.data?.name ?? "Workspace"}
+          </span>
+        </nav>
+
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-3">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              {workspaceQuery.data?.name ?? "Workspace"}
+            </h1>
+            {workspaceQuery.data?.description ? (
+              <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                {workspaceQuery.data.description}
               </p>
-              <div className="flex flex-wrap gap-2">
-                {workspaceQuery.data?.tags.length ? (
-                  workspaceQuery.data.tags.map((tag) => (
-                    <Badge key={tag} variant="outline">
-                      {tag}
-                    </Badge>
-                  ))
-                ) : (
-                  <Badge variant="outline">No tags</Badge>
-                )}
-              </div>
+            ) : null}
+            <div className="flex flex-wrap gap-1.5">
+              {workspaceQuery.data?.tags.length ? (
+                workspaceQuery.data.tags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="rounded-full text-[11px] font-medium">
+                    {tag}
+                  </Badge>
+                ))
+              ) : (
+                <Badge variant="outline" className="rounded-full text-[11px] font-medium text-muted-foreground">
+                  No tags
+                </Badge>
+              )}
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2"></div>
-        </CardContent>
-      </Card>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card className="rounded-3xl">
-          <CardHeader className="space-y-1 pb-3">
-            <CardDescription>Materials</CardDescription>
-            <CardTitle className="flex items-center gap-2 text-3xl">
-              <FilesIcon className="size-5 text-primary" />
-              {workspaceQuery.data?.materials.length ?? 0}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="rounded-3xl">
-          <CardHeader className="space-y-1 pb-3">
-            <CardDescription>Stored sessions</CardDescription>
-            <CardTitle className="flex items-center gap-2 text-3xl">
-              <HistoryIcon className="size-5 text-primary" />
-              {sessionsQuery.data?.length ?? 0}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="rounded-3xl">
-          <CardHeader className="space-y-1 pb-3">
-            <CardDescription>Local messages</CardDescription>
-            <CardTitle className="flex items-center gap-2 text-3xl">
-              <MessageSquareText className="size-5 text-primary" />
-              {chatSession.messages.length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="rounded-3xl">
-          <CardHeader className="space-y-1 pb-3">
-            <CardDescription>Tags</CardDescription>
-            <CardTitle className="flex items-center gap-2 text-3xl">
-              <TagsIcon className="size-5 text-primary" />
-              {workspaceQuery.data?.tags.length ?? 0}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+          <Button asChild size="lg" className="shrink-0 gap-2 rounded-xl shadow-sm">
+            <Link to={`/workspaces/${workspaceId}/chat`}>
+              Open chat
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+        </div>
+      </header>
+
+      {/* STATS STRIP */}
+      <div className="grid grid-cols-2 divide-x divide-border overflow-hidden rounded-2xl border bg-card lg:grid-cols-4">
+        {stats.map((stat) => (
+          <div key={stat.label} className="flex items-center gap-3 p-4 sm:p-5">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/[0.08] text-primary">
+              <stat.icon className="size-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-lg leading-none font-semibold tabular-nums">{stat.value}</p>
+              <p className="mt-1 truncate text-xs text-muted-foreground">{stat.label}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.9fr)]">
-        <Card className="rounded-3xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-2xl">
-              <Bot className="size-5 text-primary" />
-              Workspace overview
-            </CardTitle>
-            <CardDescription>
-              Use this workspace to query uploaded material, manage prior sessions, and tune metadata.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <Link
-              to={`/workspaces/${workspaceId}/chat`}
-              className="rounded-2xl border p-5 transition-colors hover:bg-muted/30"
-            >
-              <div className="flex items-center gap-3 text-lg font-medium">
-                <MessageSquareText className="size-5 text-primary" />
-                Chat
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Ask questions against the indexed documents in this workspace.
-              </p>
-            </Link>
-            <Link
-              to={`/workspaces/${workspaceId}/upload`}
-              className="rounded-2xl border p-5 transition-colors hover:bg-muted/30"
-            >
-              <div className="flex items-center gap-3 text-lg font-medium">
-                <UploadCloud className="size-5 text-primary" />
-                Upload
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Add new source files and keep the material library up to date.
-              </p>
-            </Link>
-            <Link
-              to={`/workspaces/${workspaceId}/history`}
-              className="rounded-2xl border p-5 transition-colors hover:bg-muted/30"
-            >
-              <div className="flex items-center gap-3 text-lg font-medium">
-                <HistoryIcon className="size-5 text-primary" />
-                History
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Review, rename, and delete backend chat sessions for this workspace.
-              </p>
-            </Link>
-            <Link
-              to={`/workspaces/${workspaceId}/settings`}
-              className="rounded-2xl border p-5 transition-colors hover:bg-muted/30"
-            >
-              <div className="flex items-center gap-3 text-lg font-medium">
-                <Settings2 className="size-5 text-primary" />
-                Settings
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Edit workspace metadata and clear the local browser chat cache.
-              </p>
-            </Link>
-          </CardContent>
-        </Card>
+        {/* ACTIONS */}
+        <section className="space-y-4">
+          <h2 className="text-base font-semibold tracking-tight">Get started</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {actions.map((action) => (
+              <Link
+                key={action.title}
+                to={action.href}
+                className="group rounded-2xl border bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_12px_32px_-20px] hover:shadow-primary/20"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
+                    <action.icon className="size-5" />
+                  </div>
+                  <ArrowRight className="size-4 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
+                </div>
+                <p className="mt-4 text-sm font-semibold tracking-tight">{action.title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{action.description}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
 
-        <Card className="rounded-3xl">
+        {/* RECENT LOCAL CONVERSATION */}
+        <Card className="h-fit rounded-2xl">
           <CardHeader>
-            <CardTitle className="text-xl">Recent local conversation</CardTitle>
-            <CardDescription>Messages persisted in this browser for the current workspace.</CardDescription>
+            <CardTitle className="text-base font-semibold tracking-tight">Recent local conversation</CardTitle>
+            <CardDescription className="text-xs">
+              Messages persisted in this browser for the current workspace.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {chatSession.messages.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-6 text-sm text-muted-foreground">
+              <div className="rounded-xl border border-dashed bg-muted/20 p-6 text-center text-sm text-muted-foreground">
                 No local conversation yet. Start in chat after you upload some materials.
               </div>
             ) : (
@@ -187,17 +181,17 @@ export default function WorkspaceOverviewPage() {
                 .slice(-4)
                 .reverse()
                 .map((message) => (
-                  <div key={message.id} className="rounded-2xl border border-border/60 bg-background/80 p-4">
-                    <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                  <div key={message.id} className="rounded-xl border bg-background/70 p-4">
+                    <div className="mb-2 flex items-center justify-between text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                       <span>{message.role}</span>
                       <span>{formatTime(message.createdAt)}</span>
                     </div>
-                    <p className="line-clamp-4 whitespace-pre-wrap text-sm leading-6">{message.content}</p>
+                    <p className="line-clamp-4 text-sm leading-6 break-words whitespace-pre-wrap">{message.content}</p>
                   </div>
                 ))
             )}
 
-            <Button asChild className="w-full">
+            <Button asChild className="w-full rounded-xl shadow-sm">
               <Link to={`/workspaces/${workspaceId}/chat`}>Open workspace chat</Link>
             </Button>
           </CardContent>

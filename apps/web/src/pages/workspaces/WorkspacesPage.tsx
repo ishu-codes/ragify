@@ -2,21 +2,20 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  FolderPlusIcon,
-  MoreVerticalIcon,
-  TrashIcon,
-  Search,
-  Sparkles,
-  Layers,
-  FilesIcon,
-  Plus,
-  TagIcon,
-  MessageSquare,
-  UploadCloud,
-  Settings2,
+  BookOpen,
   Code2,
   FileSpreadsheet,
-  BookOpen,
+  FilesIcon,
+  FolderPlusIcon,
+  Layers,
+  MessageSquare,
+  MoreVerticalIcon,
+  Plus,
+  Search,
+  Settings2,
+  TagIcon,
+  TrashIcon,
+  UploadCloud,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -48,21 +47,18 @@ const PRESET_TEMPLATES = [
     description: "RAG workspace for indexing API documentations, repository files, and system design specs.",
     tags: ["codebase", "architecture", "api-docs"],
     icon: Code2,
-    gradient: "from-blue-500/20 to-cyan-500/10",
   },
   {
     name: "Financial Reports & Audit Compliance",
     description: "Dedicated workspace for parsing Q3/Q4 earnings, balance sheets, and regulatory filings.",
     tags: ["financial", "compliance", "q3-audit"],
     icon: FileSpreadsheet,
-    gradient: "from-emerald-500/20 to-teal-500/10",
   },
   {
     name: "Academic Papers & Deep Research",
     description: "Workspace configured for AI whitepapers, literature reviews, and research notes.",
     tags: ["research", "whitepapers", "deep-learning"],
     icon: BookOpen,
-    gradient: "from-purple-500/20 to-pink-500/10",
   },
 ];
 
@@ -70,6 +66,7 @@ export default function WorkspacesPage() {
   const { session, isPending: isSessionPending } = useSession();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const userId = session?.user?.id;
 
   const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,9 +79,9 @@ export default function WorkspacesPage() {
   const [newWsTags, setNewWsTags] = useState("");
 
   const workspacesQuery = useQuery({
-    queryKey: ["workspaces", session?.user.id],
+    queryKey: ["workspaces", userId],
     queryFn: () => workspaceApi.list(session!.accessToken),
-    enabled: Boolean(session?.accessToken),
+    enabled: Boolean(session?.accessToken && userId),
   });
 
   const createMutation = useMutation({
@@ -104,7 +101,7 @@ export default function WorkspacesPage() {
       return created;
     },
     onSuccess: (workspace) => {
-      queryClient.invalidateQueries({ queryKey: ["workspaces", session?.user.id] });
+      queryClient.invalidateQueries({ queryKey: ["workspaces", userId] });
       toast.success("RAG workspace initialized!");
       setIsModalOpen(false);
       resetModalState();
@@ -118,7 +115,7 @@ export default function WorkspacesPage() {
   const deleteMutation = useMutation({
     mutationFn: (workspaceId: string) => workspaceApi.delete(session!.accessToken, workspaceId),
     onSuccess: (_, workspaceId) => {
-      queryClient.setQueryData(["workspaces", session?.user.id], (current: typeof workspacesQuery.data) =>
+      queryClient.setQueryData(["workspaces", userId], (current: typeof workspacesQuery.data) =>
         current?.filter((item) => item.id !== workspaceId),
       );
       toast.success("Workspace deleted");
@@ -185,11 +182,12 @@ export default function WorkspacesPage() {
     return (
       <main className="w-full min-h-screen bg-muted/20">
         <Navbar />
-        <div className="p-8 max-w-7xl mx-auto space-y-6">
-          <Skeleton className="h-40 w-full rounded-3xl" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+          <Skeleton className="h-40 w-full rounded-2xl" />
+          <Skeleton className="h-20 w-full max-w-md rounded-2xl" />
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-56 rounded-3xl" />
+              <Skeleton key={i} className="h-52 rounded-2xl" />
             ))}
           </div>
         </div>
@@ -207,119 +205,119 @@ export default function WorkspacesPage() {
         <Logo />
       </Navbar>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-        {/* HERO BANNER CARD */}
-        <Card className="rounded-3xl border-primary/20 bg-gradient-to-r from-primary/10 via-background to-background shadow-lg overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-primary/15 rounded-full blur-[100px] pointer-events-none" />
-          <CardContent className="flex flex-col gap-6 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 relative z-10">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-primary/15 text-primary border border-primary/20">
-                <Sparkles className="h-3.5 w-3.5" /> AI Knowledge Architecture
+      <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+        {/* HERO */}
+        <section className="relative overflow-hidden rounded-2xl border bg-card px-6 py-8 sm:px-10 sm:py-10">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,color-mix(in_oklch,var(--primary)_12%,transparent),transparent_55%)]"
+          />
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl space-y-3">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/[0.07] px-2.5 py-1 text-[11px] font-medium text-primary">
+                <Layers className="size-3.5" />
+                RAG workspaces
               </div>
-              <h1 className="font-extrabold text-3xl sm:text-4xl tracking-tight">Your AI RAG Workspaces</h1>
-              <p className="max-w-2xl text-xs sm:text-sm text-muted-foreground font-medium leading-relaxed">
-                Create isolated vector namespaces, ingest multi-format source materials, and chat with AI grounded in exact citations.
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Your AI RAG workspaces</h1>
+              <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+                Create isolated vector namespaces, ingest multi-format source materials, and chat with AI grounded in
+                exact citations.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div className="flex shrink-0">
               <Button
                 size="lg"
-                className="rounded-xl font-bold text-xs gap-2 shadow-lg shadow-primary/25 cursor-pointer"
+                className="gap-2 rounded-xl shadow-sm"
                 onClick={() => {
                   resetModalState();
                   setIsModalOpen(true);
                 }}
               >
-                <FolderPlusIcon className="h-4 w-4" />
-                New Workspace
+                <FolderPlusIcon className="size-4" />
+                New workspace
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
-        {/* METRICS & SEARCH & TAG FILTER BAR */}
-        <div className="space-y-4">
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground bg-background p-3 rounded-2xl border shadow-sm">
-              <div className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-primary" />
-                <span>{workspacesQuery.data?.length || 0} Workspaces</span>
+        {/* METRICS & SEARCH */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="grid w-fit grid-cols-2 divide-x divide-border overflow-hidden rounded-2xl border bg-card">
+            <div className="flex items-center gap-3 p-4 sm:p-5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/[0.08] text-primary">
+                <Layers className="size-4" />
               </div>
-              <span className="text-border">|</span>
-              <div className="flex items-center gap-2">
-                <FilesIcon className="h-4 w-4 text-primary" />
-                <span>{totalMaterials} Files Indexed</span>
+              <div>
+                <p className="text-lg leading-none font-semibold tabular-nums">{workspacesQuery.data?.length || 0}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Workspaces</p>
               </div>
             </div>
-
-            {/* Search Input */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search workspaces by name or tag..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10 rounded-2xl bg-background border-border/80 text-xs font-medium focus:ring-2 focus:ring-primary/30"
-              />
+            <div className="flex items-center gap-3 p-4 sm:p-5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/[0.08] text-primary">
+                <FilesIcon className="size-4" />
+              </div>
+              <div>
+                <p className="text-lg leading-none font-semibold tabular-nums">{totalMaterials}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Files indexed</p>
+              </div>
             </div>
           </div>
 
-          {/* Tag Filter Pills */}
-          {allUniqueTags.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="text-xs font-bold text-muted-foreground mr-1">Filter by Tag:</span>
-              <button
-                onClick={() => setSelectedTag(null)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
-                  selectedTag === null
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                All ({workspacesQuery.data?.length})
-              </button>
-              {allUniqueTags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border flex items-center gap-1 ${
-                    selectedTag === tag
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  <TagIcon className="h-2.5 w-2.5 opacity-60" />
-                  {tag}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="relative lg:w-80 xl:w-96">
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search workspaces by name or tag..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-10 rounded-xl border-border bg-card pl-9 text-sm focus-visible:ring-primary/25"
+            />
+          </div>
         </div>
 
+        {/* TAG FILTER PILLS */}
+        {allUniqueTags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setSelectedTag(null)}
+              className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                selectedTag === null
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              All ({workspacesQuery.data?.length})
+            </button>
+            {allUniqueTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                className={`flex cursor-pointer items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  selectedTag === tag
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                <TagIcon className="size-3 opacity-70" />
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* WORKSPACES GRID */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {filteredWorkspaces.map((workspace, index) => (
             <Card
               key={workspace.id}
-              className="group relative cursor-pointer rounded-3xl border bg-card transition-all duration-300 hover:shadow-xl hover:border-primary/40 hover:-translate-y-1 overflow-hidden flex flex-col justify-between"
+              className="group relative cursor-pointer overflow-hidden rounded-2xl border bg-card transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_16px_48px_-24px] hover:shadow-primary/20"
               onClick={() => navigate(`/workspaces/${workspace.id}`)}
             >
-              <CardHeader className="space-y-4 p-6">
+              <CardHeader className="gap-4 p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1.5 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
-                        #{index + 1}
-                      </div>
-                      <CardTitle className="text-lg font-bold truncate group-hover:text-primary transition-colors">
-                        {workspace.name || `Workspace ${String(index + 1).padStart(2, "0")}`}
-                      </CardTitle>
-                    </div>
-                    <CardDescription className="text-xs text-muted-foreground font-medium">
-                      Created {formatDate(workspace.created_at)}
-                    </CardDescription>
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
+                    <Layers className="size-5" />
                   </div>
 
                   <Popover
@@ -336,86 +334,89 @@ export default function WorkspacesPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="cursor-pointer rounded-full h-8 w-8 text-muted-foreground hover:text-foreground"
+                        className="size-8 cursor-pointer rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
-                        <MoreVerticalIcon className="h-4 w-4" />
+                        <MoreVerticalIcon className="size-4" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent
-                      className="w-40 p-2 text-left"
+                      className="w-44 p-1.5 text-left"
                       align="end"
                       onClick={(event) => event.stopPropagation()}
                     >
                       <Button
-                        className="w-full h-8 text-xs font-semibold text-destructive hover:text-destructive hover:bg-destructive/10 justify-start gap-2"
+                        className="h-8 w-full justify-start gap-2 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
                         onClick={() => deleteMutation.mutate(workspace.id)}
                         disabled={deleteMutation.isPending}
                         variant="ghost"
                       >
-                        <TrashIcon className="h-3.5 w-3.5" /> Delete
+                        <TrashIcon className="size-3.5" /> Delete workspace
                       </Button>
                     </PopoverContent>
                   </Popover>
                 </div>
 
-                <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed font-medium">
-                  {workspace.description || "No description provided yet. Click settings to add details."}
-                </p>
+                <div className="min-w-0 space-y-1.5">
+                  <CardTitle className="truncate text-base font-semibold tracking-tight transition-colors group-hover:text-primary">
+                    {workspace.name || `Workspace ${String(index + 1).padStart(2, "0")}`}
+                  </CardTitle>
+                  <p className="text-[10px] font-medium text-muted-foreground">
+                    Created {formatDate(workspace.created_at)}
+                  </p>
+                  <CardDescription className="line-clamp-2 text-xs leading-relaxed">
+                    {workspace.description || "No description yet. Add details in settings."}
+                  </CardDescription>
+                </div>
 
-                <div className="flex flex-wrap gap-1.5 pt-1">
+                <div className="flex flex-wrap gap-1.5">
                   {workspace.tags && workspace.tags.length > 0 ? (
                     workspace.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-[10px] font-semibold gap-1">
-                        <TagIcon className="h-2.5 w-2.5 opacity-60" />
+                      <Badge key={tag} variant="secondary" className="rounded-full text-[10px] font-medium">
                         {tag}
                       </Badge>
                     ))
                   ) : (
-                    <Badge variant="outline" className="text-[10px] font-medium text-muted-foreground/60">
+                    <Badge variant="outline" className="rounded-full text-[10px] font-medium text-muted-foreground">
                       No tags
                     </Badge>
                   )}
                 </div>
               </CardHeader>
 
-              {/* CARD FOOTER & QUICK-ACTION SHORTCUTS */}
-              <div className="border-t bg-muted/10">
-                <div className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                    <FilesIcon className="h-3.5 w-3.5 text-primary" />
-                    <span>{workspace.materials?.length || 0} Material{workspace.materials?.length === 1 ? "" : "s"}</span>
-                  </div>
+              <div className="mt-auto flex items-center justify-between gap-3 border-t bg-muted/20 px-5 py-3">
+                <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <FilesIcon className="size-3.5" />
+                  {workspace.materials?.length || 0} material{workspace.materials?.length === 1 ? "" : "s"}
+                </span>
 
-                  {/* Quick Shortcut Buttons */}
-                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-xl hover:bg-primary/10 hover:text-primary cursor-pointer"
-                      title="Open Chat"
-                      onClick={() => navigate(`/workspaces/${workspace.id}/chat`)}
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-xl hover:bg-primary/10 hover:text-primary cursor-pointer"
-                      title="Upload Files"
-                      onClick={() => navigate(`/workspaces/${workspace.id}/upload`)}
-                    >
-                      <UploadCloud className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-xl hover:bg-primary/10 hover:text-primary cursor-pointer"
-                      title="Settings"
-                      onClick={() => navigate(`/workspaces/${workspace.id}/settings`)}
-                    >
-                      <Settings2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 cursor-pointer rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                    title="Open chat"
+                    onClick={() => navigate(`/workspaces/${workspace.id}/chat`)}
+                  >
+                    <MessageSquare className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 cursor-pointer rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                    title="Upload files"
+                    onClick={() => navigate(`/workspaces/${workspace.id}/upload`)}
+                  >
+                    <UploadCloud className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 cursor-pointer rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                    title="Settings"
+                    onClick={() => navigate(`/workspaces/${workspace.id}/settings`)}
+                  >
+                    <Settings2 className="size-4" />
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -424,30 +425,30 @@ export default function WorkspacesPage() {
 
         {/* EMPTY STATE */}
         {filteredWorkspaces.length === 0 && !workspacesQuery.isLoading && (
-          <Card className="max-w-2xl mx-auto rounded-3xl border-dashed bg-background p-8 text-center shadow-sm">
-            <CardContent className="flex flex-col items-center space-y-4">
-              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                <FolderPlusIcon className="h-7 w-7" />
+          <Card className="mx-auto max-w-xl rounded-2xl border-dashed bg-card p-10 text-center">
+            <CardContent className="flex flex-col items-center gap-5 px-0">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
+                <FolderPlusIcon className="size-6" />
               </div>
-              <div className="space-y-1">
-                <h3 className="text-xl font-bold">
-                  {searchQuery || selectedTag ? "No matching workspaces found" : "No RAG Workspaces Created Yet"}
+              <div className="space-y-1.5">
+                <h3 className="text-lg font-semibold tracking-tight">
+                  {searchQuery || selectedTag ? "No matching workspaces found" : "No workspaces created yet"}
                 </h3>
-                <p className="text-xs text-muted-foreground max-w-md font-medium">
+                <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
                   {searchQuery || selectedTag
-                    ? "Try clearing your filters or create a new workspace."
-                    : "Create your first workspace to start uploading documents, parsing codebases, and querying neural AI."}
+                    ? "Try clearing your filters, or create a new workspace."
+                    : "Create your first workspace to start uploading documents, parsing codebases, and querying with grounded citations."}
                 </p>
               </div>
               <Button
                 size="lg"
-                className="rounded-xl font-bold text-xs gap-2 shadow-md cursor-pointer"
+                className="gap-2 rounded-xl shadow-sm"
                 onClick={() => {
                   resetModalState();
                   setIsModalOpen(true);
                 }}
               >
-                <Plus className="h-4 w-4" /> Create First Workspace
+                <Plus className="size-4" /> Create first workspace
               </Button>
             </CardContent>
           </Card>
@@ -456,31 +457,31 @@ export default function WorkspacesPage() {
 
       {/* NEW WORKSPACE CREATION DIALOG */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[540px] rounded-3xl p-6 sm:p-8">
+        <DialogContent className="rounded-2xl p-6 sm:max-w-[540px] sm:p-8">
           <DialogHeader className="space-y-2">
-            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" /> Initialize New RAG Workspace
+            <DialogTitle className="flex items-center gap-3 text-xl font-semibold tracking-tight">
+              <span className="flex size-9 items-center justify-center rounded-xl bg-primary/[0.08] text-primary">
+                <FolderPlusIcon className="size-4" />
+              </span>
+              New workspace
             </DialogTitle>
-            <DialogDescription className="text-xs">
-              Configure details or select a preset template to set up your knowledge namespace.
+            <DialogDescription className="text-sm">
+              Configure details or pick a preset template to set up your knowledge namespace.
             </DialogDescription>
           </DialogHeader>
 
-          {/* Quick Presets */}
           <div className="space-y-2 py-2">
-            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Or Pick a Quick Preset Template:
-            </Label>
+            <Label className="text-sm font-medium">Preset templates</Label>
             <div className="grid grid-cols-3 gap-2">
               {PRESET_TEMPLATES.map((tpl, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => handleSelectTemplate(tpl)}
-                  className="p-3 rounded-2xl border text-left bg-muted/20 hover:bg-primary/10 hover:border-primary/40 transition-all cursor-pointer space-y-1.5"
+                  className="space-y-2 rounded-xl border bg-muted/20 p-3 text-left transition-all hover:border-primary/40 hover:bg-primary/[0.06] cursor-pointer"
                 >
-                  <tpl.icon className="h-4 w-4 text-primary" />
-                  <p className="font-bold text-[11px] leading-tight line-clamp-1">{tpl.name}</p>
+                  <tpl.icon className="size-4 text-primary" />
+                  <p className="line-clamp-2 text-[11px] leading-tight font-semibold">{tpl.name}</p>
                 </button>
               ))}
             </div>
@@ -488,20 +489,20 @@ export default function WorkspacesPage() {
 
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="ws-name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Workspace Name
+              <Label htmlFor="ws-name" className="text-sm font-medium">
+                Workspace name
               </Label>
               <Input
                 id="ws-name"
                 placeholder="e.g. Q3 Financial Reports or React Architecture"
                 value={newWsName}
                 onChange={(e) => setNewWsName(e.target.value)}
-                className="h-11 rounded-xl text-xs"
+                className="h-10 rounded-xl text-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ws-desc" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              <Label htmlFor="ws-desc" className="text-sm font-medium">
                 Description
               </Label>
               <Textarea
@@ -509,41 +510,41 @@ export default function WorkspacesPage() {
                 placeholder="Brief summary of the documents and knowledge stored in this workspace..."
                 value={newWsDescription}
                 onChange={(e) => setNewWsDescription(e.target.value)}
-                className="rounded-xl text-xs resize-none h-20"
+                className="h-20 rounded-xl text-sm"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ws-tags" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Tags (Comma Separated)
+              <Label htmlFor="ws-tags" className="text-sm font-medium">
+                Tags (comma separated)
               </Label>
               <Input
                 id="ws-tags"
                 placeholder="e.g. codebase, pdfs, finance"
                 value={newWsTags}
                 onChange={(e) => setNewWsTags(e.target.value)}
-                className="h-11 rounded-xl text-xs"
+                className="h-10 rounded-xl text-sm"
               />
             </div>
           </div>
 
-          <DialogFooter className="pt-2 gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 pt-2 sm:gap-0">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsModalOpen(false)}
-              className="rounded-xl text-xs font-semibold cursor-pointer"
+              className="cursor-pointer rounded-xl text-sm font-medium"
             >
               Cancel
             </Button>
             <Button
               type="button"
-              className="rounded-xl font-bold text-xs gap-2 cursor-pointer shadow-md"
+              className="gap-2 cursor-pointer rounded-xl shadow-sm"
               onClick={() => createMutation.mutate()}
               disabled={createMutation.isPending}
             >
-              <Plus className="h-4 w-4" />
-              {createMutation.isPending ? "Initializing..." : "Create Workspace"}
+              <Plus className="size-4" />
+              {createMutation.isPending ? "Initializing..." : "Create workspace"}
             </Button>
           </DialogFooter>
         </DialogContent>

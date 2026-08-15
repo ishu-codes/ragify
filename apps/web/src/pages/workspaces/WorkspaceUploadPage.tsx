@@ -8,12 +8,12 @@ import {
   FileArchive,
   FileCode2,
   FileImage,
+  FileSpreadsheet,
   FileText,
+  FilesIcon,
   LoaderCircle,
   UploadCloud,
   XIcon,
-  Sparkles,
-  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,33 +35,31 @@ function formatBytes(size: number) {
 function MaterialIcon({ kind }: { kind: string }) {
   const normalizedKind = kind.toLowerCase();
   if (["png", "jpg", "jpeg", "gif", "webp"].includes(normalizedKind)) {
-    return <FileImage className="size-5 text-purple-500" />;
+    return <FileImage className="size-4 text-purple-500" />;
   }
   if (["json", "ts", "tsx", "js", "py", "md"].includes(normalizedKind)) {
-    return <FileCode2 className="size-5 text-blue-500" />;
+    return <FileCode2 className="size-4 text-blue-500" />;
   }
   if (["csv", "xlsx", "xls"].includes(normalizedKind)) {
-    return <FileSpreadsheet className="size-5 text-emerald-500" />;
+    return <FileSpreadsheet className="size-4 text-emerald-500" />;
   }
   if (["zip", "rar", "7z"].includes(normalizedKind)) {
-    return <FileArchive className="size-5 text-amber-500" />;
+    return <FileArchive className="size-4 text-amber-500" />;
   }
-  return <FileText className="size-5 text-primary" />;
+  return <FileText className="size-4 text-primary" />;
 }
 
 function MaterialCard({ material }: { material: WorkspaceMaterial }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-background/80 p-4 hover:border-primary/40 transition-all shadow-sm">
-      <div className="flex items-start gap-3">
-        <div className="rounded-xl bg-primary/10 p-2.5 shrink-0">
-          <MaterialIcon kind={material.kind} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-bold text-xs">{material.name}</p>
-          <p className="text-[10px] font-medium text-muted-foreground mt-0.5">
-            {material.kind.toUpperCase()} • {formatBytes(material.size)}
-          </p>
-        </div>
+    <div className="flex items-center gap-3 rounded-xl border bg-card p-3.5 transition-colors hover:border-primary/30">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+        <MaterialIcon kind={material.kind} />
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-xs font-semibold">{material.name}</p>
+        <p className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+          {material.kind.toUpperCase()} · {formatBytes(material.size)}
+        </p>
       </div>
     </div>
   );
@@ -135,17 +133,21 @@ export default function WorkspaceUploadPage() {
   }
 
   return (
-    <div className="space-y-6 p-6 lg:p-8 max-w-7xl mx-auto">
-      {/* DROPZONE CONTAINER */}
-      <Card className="rounded-3xl border shadow-sm overflow-hidden">
+    <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      {/* UPLOAD CARD */}
+      <Card className="rounded-2xl">
         <CardHeader>
-          <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
-            <Sparkles className="h-4 w-4" /> Ingestion Pipeline
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
+              <UploadCloud className="size-5" />
+            </div>
+            <div className="space-y-1">
+              <CardTitle className="text-lg font-semibold tracking-tight">Upload source materials</CardTitle>
+              <CardDescription className="text-xs">
+                Add PDFs, Markdown files, code, or JSON datasets to index into this workspace vector store.
+              </CardDescription>
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Upload Source Materials</CardTitle>
-          <CardDescription className="text-xs">
-            Add PDFs, Markdown files, Codebases, or JSON datasets to index into this workspace vector store.
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <input
@@ -158,10 +160,10 @@ export default function WorkspaceUploadPage() {
 
           <div
             className={cn(
-              "flex min-h-64 w-full cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center transition-all duration-200",
+              "flex min-h-56 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-200",
               isDragOver
-                ? "border-primary bg-primary/10 scale-[0.99]"
-                : "border-border/80 bg-muted/10 hover:border-primary/50 hover:bg-primary/5",
+                ? "border-primary bg-primary/[0.06] scale-[0.99]"
+                : "border-border bg-muted/20 hover:border-primary/50 hover:bg-primary/[0.04]",
             )}
             onClick={() => inputRef.current?.click()}
             onDragOver={(event) => {
@@ -175,62 +177,61 @@ export default function WorkspaceUploadPage() {
               addFiles(event.dataTransfer.files);
             }}
           >
-            <div className="h-16 w-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4">
-              <UploadCloud className="size-8" />
+            <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
+              <UploadCloud className="size-6" />
             </div>
-            <p className="font-bold text-base">Drag and drop files here, or click to browse</p>
-            <p className="mt-1.5 max-w-md text-xs text-muted-foreground font-medium leading-relaxed">
+            <p className="text-sm font-semibold tracking-tight">Drag and drop files here, or click to browse</p>
+            <p className="mt-1.5 max-w-md text-xs leading-relaxed text-muted-foreground">
               Supports PDF, Markdown (.md), TypeScript, Python, JSON, and CSV files up to 50 MB each.
             </p>
-            <Button className="mt-6 rounded-xl font-bold text-xs cursor-pointer shadow-md" type="button">
-              Choose Files from Computer
+            <Button className="mt-6 cursor-pointer rounded-xl shadow-sm" type="button">
+              Choose files
             </Button>
           </div>
 
           {/* PENDING FILES PREVIEW LIST */}
           {pendingFiles.length > 0 ? (
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 pt-1">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Ready to Upload ({pendingFiles.length})
+                <p className="text-xs font-medium text-muted-foreground">
+                  Ready to upload ({pendingFiles.length})
                 </p>
+                <Button
+                  className="gap-2 cursor-pointer rounded-xl shadow-sm"
+                  onClick={() => uploadMutation.mutate()}
+                  disabled={uploadMutation.isPending}
+                >
+                  <UploadCloud className="size-4" />
+                  {uploadMutation.isPending ? "Uploading and indexing..." : `Upload ${pendingFiles.length} file${pendingFiles.length === 1 ? "" : "s"}`}
+                </Button>
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 {pendingFiles.map((file) => (
                   <div
                     key={`${file.name}-${file.size}`}
-                    className="rounded-2xl border bg-background p-3.5 shadow-sm flex items-center justify-between gap-3"
+                    className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3.5"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="rounded-xl bg-primary/10 p-2 shrink-0">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
                         <MaterialIcon kind={file.name.split(".").pop() ?? "file"} />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-xs truncate">{file.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{formatBytes(file.size)}</p>
+                        <p className="truncate text-xs font-semibold">{file.name}</p>
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">{formatBytes(file.size)}</p>
                       </div>
                     </div>
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="size-7 rounded-full text-muted-foreground hover:text-destructive cursor-pointer"
+                      className="size-7 shrink-0 cursor-pointer rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                       onClick={() => removePendingFile(file)}
+                      title="Remove file"
                     >
                       <XIcon className="size-4" />
                     </Button>
                   </div>
                 ))}
-              </div>
-              <div className="flex justify-end pt-2">
-                <Button
-                  className="rounded-xl font-bold text-xs gap-2 shadow-lg shadow-primary/20 cursor-pointer"
-                  onClick={() => uploadMutation.mutate()}
-                  disabled={uploadMutation.isPending}
-                >
-                  <UploadCloud className="h-4 w-4" />
-                  {uploadMutation.isPending ? "Uploading & Indexing..." : `Upload ${pendingFiles.length} File(s)`}
-                </Button>
               </div>
             </div>
           ) : null}
@@ -239,40 +240,43 @@ export default function WorkspaceUploadPage() {
 
       {/* PROCESSING STATUS */}
       {uploadStatus ? (
-        <Card className="rounded-3xl border shadow-sm">
+        <Card className="rounded-2xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg font-bold">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight">
               {statusIcon(uploadStatus.status)}
-              Background Vector Indexing Pipeline
+              Vector indexing pipeline
             </CardTitle>
-            <CardDescription className="text-xs">
-              Files are being chunked and embedded in real-time.
-            </CardDescription>
+            <CardDescription className="text-xs">Files are being chunked and embedded in real time.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="text-xs uppercase font-bold">
+              <Badge variant="outline" className="rounded-full text-[11px] font-medium">
                 Status: {uploadStatus.status}
               </Badge>
-              <Badge variant="secondary" className="text-xs font-mono">
+              <Badge variant="secondary" className="rounded-full font-mono text-[11px]">
                 ID: {uploadStatus.id}
               </Badge>
             </div>
 
             <div className="space-y-2">
               {uploadStatus.files.map((file) => (
-                <div key={file.id} className="rounded-2xl border p-4 bg-background flex items-center justify-between">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <MaterialIcon kind={file.kind} />
+                <div
+                  key={file.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3.5"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+                      <MaterialIcon kind={file.kind} />
+                    </div>
                     <div className="min-w-0">
-                      <p className="font-bold text-xs truncate">{file.name}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {file.kind.toUpperCase()} • {formatBytes(file.size)}
+                      <p className="truncate text-xs font-semibold">{file.name}</p>
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">
+                        {file.kind.toUpperCase()} · {formatBytes(file.size)}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold uppercase">{file.status}</span>
+                  <div className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <span className="capitalize">{file.status}</span>
                     {statusIcon(file.status)}
                   </div>
                 </div>
@@ -283,21 +287,24 @@ export default function WorkspaceUploadPage() {
       ) : null}
 
       {/* EXISTING MATERIALS LIST */}
-      <Card className="rounded-3xl border shadow-sm">
+      <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-lg font-bold">Indexed Workspace Materials</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight">
+            <FilesIcon className="size-4 text-primary" />
+            Indexed workspace materials
+          </CardTitle>
           <CardDescription className="text-xs">Source files currently active in this workspace.</CardDescription>
         </CardHeader>
         <CardContent>
           {workspaceQuery.data?.materials.length ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {workspaceQuery.data.materials.map((material) => (
                 <MaterialCard key={material.id} material={material} />
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed p-8 text-center text-xs text-muted-foreground font-medium">
-              No materials uploaded to this workspace yet. Use the upload dropzone above to add documents.
+            <div className="rounded-xl border border-dashed bg-muted/20 p-8 text-center text-xs text-muted-foreground">
+              No materials uploaded to this workspace yet. Use the dropzone above to add documents.
             </div>
           )}
         </CardContent>

@@ -25,14 +25,14 @@ export function useSession() {
   }, [clearSession, query.isError, storedSession]);
 
   const session: AuthSession | null =
-    !hasHydrated
+    !hasHydrated || !storedSession?.user
       ? null
-      : storedSession && query.data
-      ? {
-          accessToken: storedSession.accessToken,
-          user: query.data.user,
-        }
-      : storedSession;
+      : storedSession && query.data?.user
+        ? {
+            accessToken: storedSession.accessToken,
+            user: query.data.user,
+          }
+        : storedSession;
 
   const isPending = !hasHydrated || (hasAccessToken && query.isPending);
 

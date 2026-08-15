@@ -50,11 +50,11 @@ export default function WorkspaceLayout() {
     <SidebarProvider>
       <WorkspaceUploadProvider workspaceId={workspaceId}>
         <AppSidebar workspaceId={workspaceId} />
-        <main className="w-full">
+        <main className="w-full min-w-0">
           <Navbar>
             <SidebarTrigger />
           </Navbar>
-          <div className="space-y-6">
+          <div>
             {workspaceQuery.isError ? (
               <Card className="rounded-3xl border-destructive/30 bg-destructive/5">
                 <CardContent className="flex items-center gap-3 p-6 text-sm text-destructive">
