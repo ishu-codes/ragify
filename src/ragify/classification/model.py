@@ -26,18 +26,13 @@ class ClassificationModel:
         return self._client
 
     def classify(self, schema):
-        # For models that don't support structured output, use JSON mode
-        try:
-            return self._client.with_structured_output(schema)
-        except Exception:
-            # Fallback: use JSON output parser
-            prompt = PromptTemplate(
-                template="Classify the query. Available routes: index, general, web. Query: {question} Context: {context}",
-                input_variables=["question", "context"],
-            )
-            parser = JsonOutputParser(pydantic_object=schema)
-            return prompt | self._client.bind(response_format={"type": "json_object"}) | parser
+        # Use JSON mode without response_format for provider compatibility.
+        prompt = PromptTemplate(
+            template="Classify the query. Available routes: index, general, web. Query: {question} Context: {context}",
+            input_variables=["question", "context"],
+        )
+        parser = JsonOutputParser(pydantic_object=schema)
+        return prompt | self._client | parser
 
 
 classification_model = ClassificationModel()
-

@@ -6,6 +6,8 @@ from src.ragify.generation.llm import llm
 from src.ragify.generation.prompts import prompts
 from src.ragify.generation.schema import Evaluate, RouteIdentifier, VerificationResult
 
+MAX_REFINEMENTS = 3
+
 
 def route_query(state: dict) -> Literal["evaluator", "general_llm", "web_search"]:
     route = state.get("route", "general")
@@ -19,9 +21,15 @@ def route_query(state: dict) -> Literal["evaluator", "general_llm", "web_search"
 
 def grade_documents(state: dict) -> Literal["refinement", "generator"]:
     score = state.get("binary_score", "no")
-    print(f"[doc_tool] Routing based on score: {score}")
     if score == "yes":
         return "generator"
+
+    refinements = state.get("refinement_count", 0) or 0
+    if refinements >= MAX_REFINEMENTS:
+        print(f"[doc_tool] Max refinements reached ({refinements}), routing to generator")
+        return "generator"
+
+    print(f"[doc_tool] Routing based on score: {score} (refinement {refinements})")
     return "refinement"
 
 
@@ -44,7 +52,7 @@ def verify_answer(state: dict) -> Literal["__end__", "generate"]:
         {"question": question, "context": context, "final_answer": final_answer}
     )
 
-    if result.faithful:
+    if result["faithful"]:
         return "__end__"
     print("Generating again as answer is not faithful.")
     return "generate"

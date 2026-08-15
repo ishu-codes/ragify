@@ -19,6 +19,13 @@ CLASSIFICATION_API_KEY = getenv("CLASSIFICATION_API_KEY", "")
 LLM_MODEL = getenv("LLM_MODEL", "qwen/qwen3-next-80b-a3b-thinking")
 LLM_URL = getenv("LLM_URL", "")
 LLM_API_KEY = getenv("LLM_API_KEY", "")
+# Some OpenAI-compatible providers don't support structured output
+# (response_format). Enable only when the configured model supports it.
+LLM_STRUCTURED_OUTPUT = getenv("LLM_STRUCTURED_OUTPUT", "false").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 # VectorDB
 VECTORDB_URL = getenv("VECTORDB_URL", "http://localhost:6333/")

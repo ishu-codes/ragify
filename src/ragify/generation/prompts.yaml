@@ -39,11 +39,22 @@ prompts:
     Classification:
 
   grading_prompt: |
-    You are a grader. You are given a question and context from our indexed knowledge base.
+    You are a grader. Decide whether the retrieved context is good enough to answer the user's question.
+
     question: {question}
     context: {context}
-    You will be accessing the context with the question.
-    If relevant, return "yes", otherwise "no". Return only 'yes' or 'no'.
+
+    Rules:
+    - The context is good enough if it contains ANY information that helps answer the question.
+    - Do NOT penalize naming differences: the user may refer to a document by a
+      different name than the one stored (e.g. "lumber job description" vs
+      "software developer job description").
+    - Partial matches and related topics still count as relevant.
+    - Say "yes" whenever you are unsure; refining the query rarely helps when
+      documents were already retrieved.
+    - Say "no" only if the context is empty or completely unrelated to the question.
+
+    Respond with valid JSON only, e.g. {{"binary_score": "yes"}} or {{"binary_score": "no"}}.
 
   rewrite_prompt: |
     You will be rewriting the query that the user asked.
@@ -57,6 +68,7 @@ prompts:
     context: {context}
     You need to generate the final answer based on the given context,
     which would be easily readable and understandable by the user.
+    DO NOT add emojis.
 
   verify_prompt: |
     You are a strict fact checker.
@@ -68,3 +80,5 @@ prompts:
     Is every part of the final answer supported by the retrieved context?
     If yes, faithful=true. If not, faithful=false.
     Provide a short explanation.
+
+    Respond with valid JSON only: {{"faithful": true, "explanation": "<brief reason>"}}

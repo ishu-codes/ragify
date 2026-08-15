@@ -12,3 +12,4 @@ class State(TypedDict):
     latest_query: Optional[str]
     workspace_id: Optional[str]
     context: list[str]
+    refinement_count: Optional[int]

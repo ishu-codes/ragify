@@ -1,7 +1,7 @@
 import re
 from os import getenv
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 from langchain_core.prompts import PromptTemplate
 
 # from langchain_tavily import TavilySearch
@@ -76,19 +76,21 @@ def retriever_node(state: State):
     print(colorize(f"latest_query: {messages}", "CYAN"))
 
     agent = get_agent(workspace_id)
-    result = agent.invoke({"input": messages})
+    result = agent.invoke({"messages": [{"role": "user", "content": messages}]})
 
     print(colorize(f"Retriever result: {result}", "CYAN"))
 
     output = result.get("messages", "")[-1]
-    if isinstance(output, AIMessage):
+    if isinstance(output, BaseMessage):
         output = output.content
 
-    intermediate_steps = result.get("messages", [])
     tool_calls = []
-    if intermediate_steps:
-        for action, tool_result in intermediate_steps:
-            tool_calls.append({"tool": action.tool, "input": action.tool_input})
+    tool_results = []
+    for message in result.get("messages", []):
+        for call in getattr(message, "tool_calls", []) or []:
+            tool_calls.append({"tool": call["name"], "input": call.get("args", {})})
+        if isinstance(message, ToolMessage):
+            tool_results.append(message.content)
 
     new_message = AIMessage(
         content=output, additional_kwargs={"tool_calls": tool_calls}
@@ -96,7 +98,7 @@ def retriever_node(state: State):
     print(colorize(f"retriever_node intermediate result: {new_message}", "CYAN"))
     print(colorize(f"retriever_node final result: {output}", "GREEN"))
 
-    return {"messages": [new_message], "context": [output]}
+    return {"messages": [new_message], "context": [output, *tool_results]}
 
 
 def evaluator(state: State):
@@ -125,7 +127,7 @@ def evaluator(state: State):
     result = chain_graded.invoke({"question": question, "context": str(context)})
 
     print(colorize(f"\n\nRetrival evaluator: {result}", "GREEN"))
-    return {"messages": state["messages"], "binary_score": result.binary_score}
+    return {"messages": state["messages"], "binary_score": result["binary_score"]}
 
 
 def query_refinement(state: State):
@@ -137,7 +139,10 @@ def query_refinement(state: State):
     result = chain.invoke({"query": query})
     print(colorize(f"\n\nQuery refinement: {result}", "GREEN"))
 
-    return {"latest_query": result.content}
+    return {
+        "latest_query": result.content,
+        "refinement_count": (state.get("refinement_count") or 0) + 1,
+    }
 
 
 def web_search(state: State):
