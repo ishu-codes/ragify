@@ -27,10 +27,27 @@ prompts:
 
     Priority:
     - Always choose "index" when relevant context exists, no matter what.
+    - Questions that refer to the provided context or a document in it
+      ("the given job description", "this document", "the uploaded file",
+      "based on the context", "according to the document") should be "index"
+      whenever the context contains matching content, even if the document's
+      title or wording differs from the question.
     - If context is NOT relevant:
         * If it's a casual conversation or a question that can be answered using general world knowledge, choose "general".
         * Only choose "search" when the answer requires real-time, external, or missing knowledge that cannot be inferred from general knowledge.
-    - DO NOT give anything extra, just return the category, nothing else
+
+    Examples:
+    - Question: "best roles for the given job description"
+      Context: "• Design, develop, test, deploy and maintain software. • Knowledge of Java or React."
+      Classification: index
+    - Question: "what is the capital of France"
+      Context: "• Design, develop, test, deploy and maintain software."
+      Classification: general
+    - Question: "latest news about OpenAI"
+      Context: "• Design, develop, test, deploy and maintain software."
+      Classification: search
+
+    Return only the category name, nothing else.
 
     ---
     Question: {question}

@@ -154,9 +154,20 @@ export default function WorkspaceChatPage() {
 
   const [localMessages, setLocalMessages] = useState<WorkspaceMessage[]>([]);
 
-  const displayMessages = Array.isArray(messagesQuery.data)
-    ? [...messagesQuery.data, ...localMessages.filter((m) => m.id.startsWith("local-"))]
-    : localMessages;
+  // The backend persists both the prompt and the answer to the session, so once
+  // server messages arrive they are authoritative. Local messages are only an
+  // optimistic overlay: keep the ones the server has not returned yet.
+  const displayMessages = useMemo(() => {
+    const serverMessages = Array.isArray(messagesQuery.data) ? messagesQuery.data : [];
+    const serverMessageKeys = new Set(serverMessages.map((message) => `${message.role}:${message.content}`));
+    return [
+      ...serverMessages,
+      ...localMessages.filter(
+        (message) =>
+          message.id.startsWith("local-") && !serverMessageKeys.has(`${message.role}:${message.content}`),
+      ),
+    ];
+  }, [messagesQuery.data, localMessages]);
 
   const queryMutation = useMutation({
     mutationFn: async (query: string) => {
@@ -258,7 +269,7 @@ export default function WorkspaceChatPage() {
     return sessionsQuery.data.filter((s) => s.name.toLowerCase().includes(sessionSearch.toLowerCase()));
   }, [sessionsQuery.data, sessionSearch]);
 
-  const isLoadingMessages = messagesQuery.isLoading || messagesQuery.isFetching;
+  const isLoadingMessages = (messagesQuery.isLoading || messagesQuery.isFetching) && displayMessages.length === 0;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {

@@ -37,10 +37,19 @@ class RetrieverTool:
     def tool(self):
         return self._tool
 
-    def invoke(self, query: str, k: int = 4) -> list[Document]:
+    def invoke(self, query: str, k: int = 3) -> list[Document]:
         if self._tool is None:
             return []
-        return self._tool.invoke(query, k=k)
+        docs = self._tool.invoke(query, k=k)
+
+        # Deduplicate chunks with identical content (e.g. overlapping splits).
+        seen = set()
+        unique = []
+        for doc in docs:
+            if doc.page_content not in seen:
+                seen.add(doc.page_content)
+                unique.append(doc)
+        return unique
 
     def retrieve(self, query: str, k: int = 4) -> list[Document]:
         return self.invoke(query, k)

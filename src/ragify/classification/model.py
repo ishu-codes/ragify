@@ -18,7 +18,9 @@ class ClassificationModel:
         self._client = ChatOpenAI(
             model=CLASSIFICATION_MODEL,
             base_url=CLASSIFICATION_URL,
-            api_key=CLASSIFICATION_API_KEY
+            api_key=CLASSIFICATION_API_KEY,
+            timeout=30,
+            max_retries=2,
         )
 
     @property

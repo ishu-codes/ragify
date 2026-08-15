@@ -17,7 +17,7 @@ class VectorStoreManager:
         self.url = url
         self.api_key = api_key
         self.vector_size = vector_size
-        self._client = QdrantClient(url=url, api_key=api_key)
+        self._client = QdrantClient(url=url, api_key=api_key, timeout=10)
         self._stores: dict[str, QdrantVectorStore] = {}
 
     def create_collection(self, collection_name: str) -> None:

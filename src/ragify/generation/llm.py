@@ -23,7 +23,9 @@ class LLM:
         self._client = ChatOpenAI(
             model=self.model_name,
             base_url=LLM_URL,
-            api_key=LLM_API_KEY
+            api_key=LLM_API_KEY,
+            timeout=60,
+            max_retries=2,
         )
 
     @property

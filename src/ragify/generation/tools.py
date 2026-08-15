@@ -6,7 +6,7 @@ from src.ragify.generation.llm import llm
 from src.ragify.generation.prompts import prompts
 from src.ragify.generation.schema import Evaluate, RouteIdentifier, VerificationResult
 
-MAX_REFINEMENTS = 3
+MAX_REFINEMENTS = 1
 
 
 def route_query(state: dict) -> Literal["evaluator", "general_llm", "web_search"]:

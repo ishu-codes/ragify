@@ -20,6 +20,14 @@ from src.utils.colors import colorize
 
 tavily_client = TavilyClient(api_key=getenv("TAVILY_API_KEY"))
 
+
+def _trim_context(text: str, limit: int = 4000) -> str:
+    text = text.strip()
+    if len(text) > limit:
+        return text[:limit] + "\n...[context truncated]"
+    return text
+
+
 def query_classifier(state: State):
     workspace_id = state.get("workspace_id")
     question = state.get("messages", [{}])[-1].content
@@ -29,6 +37,37 @@ def query_classifier(state: State):
     context = retriever.invoke({"query": question})
     print(colorize(f"\ncontext: \n{context}", "CYAN"))
 
+    # Deduplicate retrieved chunks and cap the prompt size so the LLM call stays fast.
+    seen = set()
+    unique_chunks = []
+    for doc in context:
+        content = doc.page_content if hasattr(doc, "page_content") else str(doc)
+        if content not in seen:
+            seen.add(content)
+            unique_chunks.append(content)
+    context = _trim_context("\n\n".join(unique_chunks))
+
+    # Fast path: questions that clearly reference the retrieved context or an
+    # uploaded document should use it without spending a classifier LLM call.
+    # This is intentionally generic (any document type), so domain-specific
+    # queries are left to the classifier.
+    references_document = re.search(
+        r"\bthis\s+(?:document|file|text|content|passage|context)\b|"
+        r"the\s+(?:given|uploaded|attached|provided|above)\s+(?:document|file|text|content|passage)\b|"
+        r"according to (?:the\s+)?(?:context|document|file)|"
+        r"based on (?:the\s+)?(?:context|document)|"
+        r"refer(?:ring|ence)? to (?:the\s+)?(?:document|file|context)",
+        question,
+        re.IGNORECASE,
+    )
+    if context and references_document:
+        print(colorize("Query classifier: index (document-referencing question)", "GREEN"))
+        return {
+            "messages": state["messages"],
+            "route": "index",
+            "latest_query": question,
+            "context": [context],
+        }
 
     classify_prompt = PromptTemplate(
         template=prompts.classify_prompt,
@@ -58,6 +97,17 @@ def query_classifier(state: State):
         import traceback
         traceback.print_exc()
         print("Error")
+
+        # If the classifier fails (e.g. LLM timeout), prefer using the retrieved
+        # context over falling back to a context-free general answer.
+        route = "index" if context else "general"
+        print(colorize(f"Query classifier fallback: {route}", "RED"))
+        return {
+            "messages": state["messages"],
+            "route": route,
+            "latest_query": question,
+            "context": [context],
+        }
 
 
 
@@ -103,6 +153,7 @@ def retriever_node(state: State):
 
 def evaluator(state: State):
     context = state.get('context', [])
+    context = _trim_context("\n\n".join(str(part) for part in context))
 
     grading_prompt = PromptTemplate(
         template=prompts.grading_prompt,
@@ -149,7 +200,9 @@ def web_search(state: State):
     # try:
     # search_tool = TavilySearch(max_results=5, topic="general")
     # result = search_tool.invoke({"query": state.get("latest_query", "")})
-    results = tavily_client.search(state.get("latest_query", "")).get('results', [])
+    results = tavily_client.search(
+        state.get("latest_query", ""), timeout=30
+    ).get("results", [])
 
     # contents = [item["content"] for item in result if "content" in item]
     print(colorize(f"\n\nWeb search: {results}", "GREEN"))

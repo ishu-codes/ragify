@@ -353,7 +353,9 @@ class WorkspaceService:
         if workspace:
             from src.ragify.retrieval import vector_store_manager
 
-            vector_store_manager.create_collection(str(workspace.id))
+            await asyncio.to_thread(
+                vector_store_manager.create_collection, str(workspace.id)
+            )
         return workspace
 
     @staticmethod
@@ -428,9 +430,24 @@ class SessionService:
 
         from src.ragify.generation import builder
 
-        result = builder.invoke(
-            {"messages": chat_messages, "workspace_id": workspace_id}
-        )
+        # The RAG graph (retrieval + evaluation + generation) is synchronous and
+        # can take a while; run it in a worker thread so the event loop keeps
+        # serving other requests, and bound it so the request can never hang.
+        print("[query] Starting RAG graph invocation")
+        try:
+            result = await asyncio.wait_for(
+                asyncio.to_thread(
+                    builder.invoke,
+                    {"messages": chat_messages, "workspace_id": workspace_id},
+                ),
+                timeout=240,
+            )
+        except asyncio.TimeoutError:
+            print("[query] RAG graph invocation timed out")
+            raise HTTPException(
+                status_code=504, detail="Query timed out. Please try again."
+            ) from None
+        print("[query] RAG graph invocation finished")
         output_text = result["messages"][-1].content
         chat_messages.append(AIMessage(content=output_text))
 
