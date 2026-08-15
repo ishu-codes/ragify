@@ -10,6 +10,7 @@ type RequestOptions = {
   body?: BodyInit | object;
   token?: string;
   params?: Record<string, string | number | boolean | undefined>;
+  signal?: AbortSignal;
 };
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -45,6 +46,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: requestBody,
+    signal: options.signal,
   });
 
   const payload = (await response.json().catch(() => null)) as T | null;
@@ -92,11 +94,17 @@ export const workspaceApi = {
   },
   uploadStatus: (token: string, workspaceId: string, statusId: string) =>
     request<WorkspaceUploadStatus>(`workspaces/${workspaceId}/uploads/${statusId}`, { token }),
-  query: (token: string, workspaceId: string, body: { session_id?: string | null; query: string }) =>
+  query: (
+    token: string,
+    workspaceId: string,
+    body: { session_id?: string | null; query: string },
+    options?: { signal?: AbortSignal },
+  ) =>
     request<QueryResponse>(`workspaces/${workspaceId}/query`, {
       method: "POST",
       token,
       body,
+      signal: options?.signal,
     }),
   sessions: (token: string, workspaceId: string) =>
     request<WorkspaceSessionSummary[]>(`workspaces/${workspaceId}/sessions`, { token }),

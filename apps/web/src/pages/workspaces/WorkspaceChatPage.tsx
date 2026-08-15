@@ -12,6 +12,7 @@ import {
   Plus,
   Search,
   SendHorizonalIcon,
+  Square,
   Trash2,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -21,6 +22,7 @@ import rehypeKatex from "rehype-katex";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/hooks/useAuthSession";
 import { workspaceApi } from "@/lib/api";
@@ -153,6 +155,11 @@ export default function WorkspaceChatPage() {
   }
 
   const [localMessages, setLocalMessages] = useState<WorkspaceMessage[]>([]);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => abortControllerRef.current?.abort();
+  }, []);
 
   // The backend persists both the prompt and the answer to the session, so once
   // server messages arrive they are authoritative. Local messages are only an
@@ -175,22 +182,29 @@ export default function WorkspaceChatPage() {
         throw new Error("Workspace session is unavailable");
       }
 
-      return workspaceApi.query(session.accessToken, workspaceId, {
-        session_id: activeSession.sessionId,
-        query,
-      });
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      return workspaceApi.query(
+        session.accessToken,
+        workspaceId,
+        {
+          session_id: activeSession.sessionId,
+          query,
+        },
+        { signal: controller.signal },
+      );
     },
-    onSuccess: (data, query) => {
+    onSuccess: (data) => {
       if (!workspaceId) {
         return;
       }
 
-      const userMsg = createWorkspaceMessage("user", query);
+      // The user prompt is already shown optimistically; only the answer is new.
       const assistantMsg = createWorkspaceMessage("assistant", data.answer);
-      userMsg.id = `local-${userMsg.id}`;
       assistantMsg.id = `local-${assistantMsg.id}`;
 
-      setLocalMessages((prev) => [...prev, userMsg, assistantMsg]);
+      setLocalMessages((prev) => [...prev, assistantMsg]);
 
       const nextSession: WorkspaceSession = {
         sessionId: data.session_id,
@@ -209,21 +223,46 @@ export default function WorkspaceChatPage() {
       queryClient.invalidateQueries({ queryKey: ["workspace-sessions", workspaceId] });
       setPrompt("");
     },
-    onError: (error) => {
+    onError: (error, query) => {
+      if ((error as { name?: string } | null)?.name === "AbortError") {
+        return;
+      }
+      // The prompt was shown optimistically; remove it so the user can retry.
+      setLocalMessages((prev) =>
+        prev.filter(
+          (message) =>
+            !(message.id.startsWith("local-") && message.role === "user" && message.content === query),
+        ),
+      );
       toast.error(error.message);
     },
   });
+
+  function appendOptimisticUserMessage(content: string) {
+    const userMsg = createWorkspaceMessage("user", content);
+    userMsg.id = `local-${userMsg.id}`;
+    setLocalMessages((prev) => [...prev, userMsg]);
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedPrompt = prompt.trim();
     if (!trimmedPrompt) return;
+    appendOptimisticUserMessage(trimmedPrompt);
+    setPrompt("");
     queryMutation.mutate(trimmedPrompt);
   }
 
   function handlePromptStarter(starter: string) {
-    setPrompt(starter);
+    appendOptimisticUserMessage(starter);
+    setPrompt("");
     queryMutation.mutate(starter);
+  }
+
+  function handleStop() {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    queryMutation.reset();
   }
 
   function handleCopyMessage(content: string, id: string) {
@@ -356,7 +395,7 @@ export default function WorkspaceChatPage() {
         {/* MESSAGES SCROLL AREA */}
         <div ref={containerRef} className="flex-1 space-y-6 overflow-y-auto px-4 py-6 sm:px-6">
           {isLoadingMessages && (
-            <div className="mx-auto max-w-3xl space-y-4">
+            <div className="mr-auto max-w-3xl space-y-4">
               <Skeleton className="h-20 w-3/4 rounded-2xl" />
               <Skeleton className="ml-auto h-14 w-2/3 rounded-2xl" />
               <Skeleton className="h-28 w-3/4 rounded-2xl" />
@@ -405,45 +444,23 @@ export default function WorkspaceChatPage() {
                 key={message.id}
                 className={cn(
                   "flex max-w-3xl animate-in fade-in gap-3 duration-200",
-                  message.role === "assistant" ? "mx-auto" : "ml-auto flex-row-reverse",
+                  message.role === "assistant" ? "mr-auto" : "ml-auto flex-row-reverse",
                 )}
               >
-                <div
-                  className={cn(
-                    "flex size-8 shrink-0 items-center justify-center rounded-xl",
-                    message.role === "assistant"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground ring-1 ring-border",
-                  )}
-                >
-                  {message.role === "assistant" ? (
+                {message.role === "assistant" ? (
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <Brain className="size-4" />
-                  ) : (
-                    <span className="text-xs font-semibold">You</span>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <Avatar className="size-8 shrink-0">
+                    <AvatarImage src={session?.user.image ?? ""} alt={session?.user.name ?? "You"} />
+                    <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                      {session?.user.name?.charAt(0)?.toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
 
                 <div className="min-w-0 max-w-[85%] space-y-1.5">
-                  <div className="flex items-center justify-between gap-2 px-1">
-                    <span className="text-[10px] font-medium text-muted-foreground">
-                      {message.role === "assistant" ? "Ragify" : "You"}
-                    </span>
-                    {message.role === "assistant" && (
-                      <button
-                        onClick={() => handleCopyMessage(message.content, message.id)}
-                        className="flex cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        title="Copy response"
-                      >
-                        {copiedMessageId === message.id ? (
-                          <Check className="size-3 text-emerald-500" />
-                        ) : (
-                          <Copy className="size-3" />
-                        )}
-                        <span>{copiedMessageId === message.id ? "Copied" : "Copy"}</span>
-                      </button>
-                    )}
-                  </div>
-
                   <div
                     className={cn(
                       "rounded-2xl p-4 text-sm leading-relaxed shadow-sm",
@@ -469,14 +486,30 @@ export default function WorkspaceChatPage() {
                       ),
                     )}
                   </div>
+
+                  <button
+                    onClick={() => handleCopyMessage(message.content, message.id)}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                      message.role === "assistant" ? "" : "ml-auto",
+                    )}
+                    title="Copy message"
+                  >
+                    {copiedMessageId === message.id ? (
+                      <Check className="size-3 text-emerald-500" />
+                    ) : (
+                      <Copy className="size-3" />
+                    )}
+                    <span>{copiedMessageId === message.id ? "Copied" : "Copy"}</span>
+                  </button>
                 </div>
               </div>
             ))}
 
           {/* STREAMING LOADING INDICATOR */}
           {queryMutation.isPending && (
-            <div className="mx-auto flex max-w-3xl animate-pulse gap-3">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <div className="mr-auto flex max-w-3xl animate-pulse gap-3">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Brain className="size-4" />
               </div>
               <div className="flex items-center gap-2 rounded-2xl border bg-card p-4 text-xs font-medium text-muted-foreground">
@@ -488,10 +521,7 @@ export default function WorkspaceChatPage() {
         </div>
 
         {/* INPUT PROMPT BAR */}
-        <form
-          className="mx-auto w-full max-w-3xl p-4"
-          onSubmit={handleSubmit}
-        >
+        <form className="w-full border-t bg-background/95 px-4 py-4 backdrop-blur sm:px-6" onSubmit={handleSubmit}>
           <div className="flex items-center gap-2 rounded-2xl border bg-card p-2 shadow-sm transition-all focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
             <Input
               type="text"
@@ -505,15 +535,27 @@ export default function WorkspaceChatPage() {
               onChange={(event) => setPrompt(event.target.value)}
               disabled={queryMutation.isPending}
             />
-            <Button
-              type="submit"
-              size="icon"
-              className="size-10 shrink-0 cursor-pointer rounded-xl shadow-sm"
-              disabled={queryMutation.isPending || !prompt.trim()}
-              title="Send message"
-            >
-              <SendHorizonalIcon className="size-4" />
-            </Button>
+            {queryMutation.isPending ? (
+              <Button
+                type="button"
+                size="icon"
+                className="size-10 shrink-0 cursor-pointer rounded-xl shadow-sm"
+                onClick={handleStop}
+                title="Stop generating"
+              >
+                <Square className="size-3.5 fill-current" />
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="icon"
+                className="size-10 shrink-0 cursor-pointer rounded-xl shadow-sm"
+                disabled={!prompt.trim()}
+                title="Send message"
+              >
+                <SendHorizonalIcon className="size-4" />
+              </Button>
+            )}
           </div>
         </form>
       </div>
