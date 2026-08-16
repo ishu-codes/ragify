@@ -17,6 +17,36 @@ Includes:
   - PDFs: Grobid-based parsing (batch) + indexing
   - Markdown/other files: convert to Markdown, chunk, index
 - **Generation**: LangGraph workflow that routes queries (`index` vs `general` vs `search`) and can optionally call Tavily search
+- **Service boundary**: the API never imports `src/ragify` directly. ragify-rag
+  runs as a separate gRPC server (`src/ragify/grpc`) and the API talks to it
+  through `ragify_client` (`apps/api/src/ragify_client`), a small library that
+  mirrors the ragify API surface (`vector_store_manager`, `builder`,
+  `GrobidIngestor`, ...) so the transport stays invisible to callers.
+
+## gRPC (API ↔ ragify-rag)
+
+The shared contract lives in [`src/ragify/grpc/ragify.proto`](src/ragify/grpc/ragify.proto)
+and covers three services:
+
+- `VectorStoreService` — workspace collection create/delete and document insert
+- `IngestionService` — chunking, markdown conversion, document ingestion and PDF (Grobid) ingestion
+- `RagService` — RAG graph query execution
+
+Start the ragify-rag server (default `0.0.0.0:50051`):
+
+```bash
+python -m src.ragify.grpc
+# or: make ragify-server
+```
+
+Configure the endpoint with `RAGIFY_GRPC_ENDPOINT` (client) and
+`RAGIFY_GRPC_HOST` / `RAGIFY_GRPC_PORT` (server); see `.env.example`.
+
+After editing the proto, regenerate both copies of the stubs:
+
+```bash
+make grpc-gen
+```
 
 ## Quickstart (Local)
 
