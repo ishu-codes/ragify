@@ -31,10 +31,10 @@ infra-down:
     docker compose --env-file=../../.env down
 
 ragify-server:
-	python -m src.ragify.grpc
+	cd rag && .venv/bin/python -m src.grpc
 
 grpc-gen:
-	bash scripts/gen_ragify_grpc.sh
+	cd rag && bash scripts/gen_ragify_grpc.sh
 
 
 # ── Build ─────────────────────────────────────────────────────────────────────

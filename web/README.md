@@ -1,34 +1,50 @@
-# React + TypeScript + Vite
+# ragify-web
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Browser app for Ragify: landing page, authentication, per-workspace dashboards, file upload and chat.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Vite 8 + React 19 + TypeScript
+- Tailwind CSS v4 (via `@tailwindcss/vite`)
+- shadcn-style UI components (`src/components/ui`)
+- TanStack Query, Zustand, React Router
+- React Markdown + KaTeX for chat answers
 
-## React Compiler
+## Scripts
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+pnpm dev      # Vite dev server on :3000
+pnpm build    # tsc -b && vite build
+pnpm lint     # oxlint
+pnpm preview  # preview the production build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## API configuration
+
+The API base URL is read from `VITE_API_URL` (default `http://localhost:8000`), with the version prefix from `VITE_API_VERSION` (default `v1`). All calls go through `src/lib/api.ts`.
+
+## Structure
+
+```text
+src/
+  components/
+    marketing/    landing page Reveal + DemoConsole
+    navbar/       app navigation
+    ui/           shadcn-style primitives
+    workspaces/   shared workspace UI
+  fetchers/       typed API fetchers
+  hooks/          auth session, responsive hooks
+  lib/            api client, types, utils
+  pages/
+    auth/         sign in / sign up
+    workspaces/   overview, chat, upload, settings
+  store/          Zustand stores (session, sidebar)
+```
+
+## Pages
+
+- `/` landing, `/terms`, `/privacy`
+- `/sign-in`, `/sign-up`
+- `/workspaces` list and `/workspaces/:id` (overview, chat, upload, settings)
+
+The app expects the backend on `:8000` and the rag gRPC service reachable from the backend on `:50051` (see the repo root README).
