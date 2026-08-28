@@ -5,7 +5,6 @@ import { Cable, Check, Copy, Save, Settings2, Trash2, Wrench } from "lucide-reac
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "@/hooks/useAuthSession";
 import { API_URL, workspaceApi } from "@/lib/api";
 import { clearWorkspaceSession } from "@/lib/workspace-session";
+import { DashedPanel } from "@/components/marketing/DashedPanel";
 
 export default function WorkspaceSettingsPage() {
   const { workspaceId = "" } = useParams<{ workspaceId: string }>();
@@ -60,31 +60,31 @@ export default function WorkspaceSettingsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="container max-w-3xl space-y-8 py-10">
       <header className="space-y-1.5">
         <h1 className="text-2xl font-semibold tracking-tight">Workspace settings</h1>
         <p className="text-sm text-muted-foreground">Manage identity, environment, and maintenance for this workspace.</p>
       </header>
 
       <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="h-auto w-fit flex-wrap justify-start gap-1 rounded-xl bg-muted p-1">
+        <TabsList className="h-auto w-full justify-start gap-0 rounded-none border-b border-border bg-transparent p-0">
           <TabsTrigger
             value="details"
-            className="gap-1.5 rounded-lg px-3 py-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"
+            className="gap-1.5 rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs data-[state=active]:border-brand data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
           >
             <Settings2 className="size-3.5" />
             Details
           </TabsTrigger>
           <TabsTrigger
             value="environment"
-            className="gap-1.5 rounded-lg px-3 py-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"
+            className="gap-1.5 rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs data-[state=active]:border-brand data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
           >
             <Cable className="size-3.5" />
             Environment
           </TabsTrigger>
           <TabsTrigger
             value="maintenance"
-            className="gap-1.5 rounded-lg px-3 py-1.5 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"
+            className="gap-1.5 rounded-none border-b-2 border-transparent px-4 py-2.5 text-xs data-[state=active]:border-brand data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
           >
             <Wrench className="size-3.5" />
             Maintenance
@@ -92,14 +92,14 @@ export default function WorkspaceSettingsPage() {
         </TabsList>
 
         <TabsContent value="details">
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold tracking-tight">Workspace details</CardTitle>
-              <CardDescription className="text-xs">
+          <DashedPanel className="bg-card p-6 sm:p-8">
+            <div className="space-y-1.5">
+              <h2 className="text-base font-semibold tracking-tight">Workspace details</h2>
+              <p className="text-xs text-muted-foreground">
                 Edit the identity and context shown across this workspace.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </p>
+            </div>
+            <div className="mt-6 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="workspace-name" className="text-sm font-medium">
                   Name
@@ -114,7 +114,7 @@ export default function WorkspaceSettingsPage() {
                       tags: current?.tags ?? workspaceQuery.data?.tags.join(", ") ?? "",
                     }))
                   }
-                  className="h-10 rounded-xl text-sm"
+                  className="h-10 rounded-md text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -131,7 +131,7 @@ export default function WorkspaceSettingsPage() {
                       tags: current?.tags ?? workspaceQuery.data?.tags.join(", ") ?? "",
                     }))
                   }
-                  className="min-h-24 rounded-xl text-sm"
+                  className="min-h-24 rounded-md text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -149,12 +149,13 @@ export default function WorkspaceSettingsPage() {
                     }))
                   }
                   placeholder="research, onboarding, product docs"
-                  className="h-10 rounded-xl text-sm"
+                  className="h-10 rounded-md text-sm"
                 />
               </div>
               <div className="flex justify-end pt-1">
                 <Button
-                  className="gap-2 cursor-pointer rounded-xl shadow-sm"
+                  variant="pill"
+                  className="gap-2 cursor-pointer"
                   onClick={() => updateMutation.mutate()}
                   disabled={updateMutation.isPending}
                 >
@@ -162,20 +163,20 @@ export default function WorkspaceSettingsPage() {
                   {updateMutation.isPending ? "Saving..." : "Save changes"}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </DashedPanel>
         </TabsContent>
 
         <TabsContent value="environment">
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold tracking-tight">Environment</CardTitle>
-              <CardDescription className="text-xs">
+          <DashedPanel className="bg-card p-6 sm:p-8">
+            <div className="space-y-1.5">
+              <h2 className="text-base font-semibold tracking-tight">Environment</h2>
+              <p className="text-xs text-muted-foreground">
                 Current backend configuration used by this workspace.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-3 rounded-xl border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+              </p>
+            </div>
+            <div className="mt-6">
+              <div className="flex flex-col gap-3 border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 space-y-1">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                     <Cable className="size-3.5" />
@@ -185,29 +186,29 @@ export default function WorkspaceSettingsPage() {
                 </div>
                 <Button
                   variant="ghost"
-                  className="shrink-0 cursor-pointer gap-1.5 rounded-xl text-xs"
+                  className="shrink-0 cursor-pointer gap-1.5 text-xs"
                   onClick={handleCopyUrl}
                 >
                   {urlCopied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
                   {urlCopied ? "Copied" : "Copy"}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </DashedPanel>
         </TabsContent>
 
         <TabsContent value="maintenance">
-          <Card className="rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold tracking-tight">Maintenance</CardTitle>
-              <CardDescription className="text-xs">
+          <DashedPanel className="bg-card p-6 sm:p-8">
+            <div className="space-y-1.5">
+              <h2 className="text-base font-semibold tracking-tight">Maintenance</h2>
+              <p className="text-xs text-muted-foreground">
                 Clear any locally cached chat session for this workspace.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+              </p>
+            </div>
+            <div className="mt-6">
               <Button
-                variant="outline"
-                className="gap-2 cursor-pointer rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive"
+                variant="outlinePill"
+                className="gap-2 cursor-pointer text-destructive hover:bg-destructive/10 hover:text-destructive"
                 onClick={() => {
                   if (!workspaceId) {
                     return;
@@ -220,8 +221,8 @@ export default function WorkspaceSettingsPage() {
                 <Trash2 className="size-4" />
                 Clear local session cache
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </DashedPanel>
         </TabsContent>
       </Tabs>
     </div>

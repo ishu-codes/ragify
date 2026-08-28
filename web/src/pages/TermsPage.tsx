@@ -1,80 +1,81 @@
 import { ArrowLeft, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { DashedPanel } from "@/components/marketing/DashedPanel";
 
 export default function TermsPage() {
   return (
     <div className="min-h-dvh bg-background py-12">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+      <div className="container max-w-3xl">
         <div className="mb-8 flex items-center justify-between">
-          <Button variant="ghost" size="sm" asChild className="gap-2 rounded-xl">
+          <Button variant="ghost" size="sm" asChild className="gap-2">
             <Link to="/">
               <ArrowLeft className="size-4" /> Back to home
             </Link>
           </Button>
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
+          <div className="flex size-10 items-center justify-center bg-brand/10 text-brand-text ring-1 ring-brand/20">
             <FileText className="size-5" />
           </div>
         </div>
 
-        {/* TODO: replace the section content below with Ragify-specific legal text. */}
-        <div className="space-y-10 rounded-2xl border bg-card p-8 sm:p-12">
+        <DashedPanel className="bg-card p-8 sm:p-12">
+          <div className="space-y-10">
           <header className="space-y-3">
             <h1 className="text-3xl font-semibold tracking-tight">Terms of service</h1>
-            <p className="text-xs text-muted-foreground">Effective date: April 1, 2026</p>
+            <p className="font-mono text-xs text-muted-foreground">Effective date: August 18, 2026</p>
           </header>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">1. Operational model</h2>
+            <h2 className="text-lg font-semibold tracking-tight">1. The service</h2>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              By accessing the ClubCommit terminal, you agree to engage in our performance-based impact network. Users
-              provide performance logs (golf scores) to become eligible for charitable prize distributions.
+              Ragify provides hosted workspaces that index your documents and answer questions with source citations.
+              By creating an account or using the service, you agree to these terms.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">2. Subscription protocols</h2>
-            <div className="space-y-2 rounded-xl border bg-muted/20 p-4">
-              <p className="text-sm font-semibold text-foreground">Monthly/annual stake:</p>
+            <h2 className="text-lg font-semibold tracking-tight">2. Accounts and acceptable use</h2>
+            <div className="space-y-2 border border-border bg-muted/20 p-4">
+              <p className="text-sm font-semibold text-foreground">You agree to:</p>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Participation requires an active membership protocol. Your stake supports system maintenance and
-                charitable pools. You may disconnect your identity (cancel) at any time through the dashboard.
+                Keep your credentials secure, upload only content you have the right to index, and not use the service
+                to store or generate unlawful material. We may suspend accounts that violate these terms.
               </p>
             </div>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">3. Distribution eligibility</h2>
+            <h2 className="text-lg font-semibold tracking-tight">3. Plans and billing</h2>
             <ul className="list-disc space-y-3 pl-5 text-sm leading-relaxed text-muted-foreground">
-              <li>
-                Users must log at least <span className="font-semibold text-foreground">5 valid rounds</span> to
-                calculate a rolling index.
-              </li>
-              <li>Verification requires uploading terminal evidence (scorecards) upon draw selection.</li>
-              <li>System nodes reserve the right to audit and invalidate fraudulent logs.</li>
+              <li>The Free plan is available without a credit card and may be used subject to published limits.</li>
+              <li>Paid plans are billed in advance on a monthly basis and can be cancelled at any time.</li>
+              <li>Features, limits, and pricing are described on the pricing page and may change with notice.</li>
             </ul>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">4. Charitable allocation</h2>
+            <h2 className="text-lg font-semibold tracking-tight">4. Intellectual property</h2>
             <p className="text-sm leading-relaxed text-muted-foreground italic">
-              Allocated prizes are distributed via registered strategic partners. ClubCommit does not take custody of
-              funds intended for charitable entities beyond service fees.
+              You retain ownership of the documents you upload. Ragify grants you a limited license to use the service
+              for its intended purpose, and you may not resell or reverse-engineer it without permission.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">5. Terminal security</h2>
+            <h2 className="text-lg font-semibold tracking-tight">5. Availability and liability</h2>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Unauthorized access or attempt to manipulate performance logs via automated bots will result in immediate
-              identity purge and eligibility ban.
+              The service is provided "as is" without warranties of any kind. Ragify is not liable for indirect or
+              consequential damages, and our total liability is limited to the amount you paid in the three months
+              before the claim. Answers generated by the service are informational and should be verified against your
+              sources.
             </p>
           </section>
 
           <footer className="border-t pt-6">
-            <p className="text-center text-xs text-muted-foreground">ClubCommit operational agreement v1.0</p>
+            <p className="text-center text-xs text-muted-foreground">Ragify terms of service v1.0</p>
           </footer>
-        </div>
+          </div>
+        </DashedPanel>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DatabaseZap } from "lucide-react";
 
 import { AppSidebar, Navbar } from "@/components/workspaces";
-import { Card, CardContent } from "@/components/ui/card";
+import { DashedPanel } from "@/components/marketing/DashedPanel";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/hooks/useAuthSession";
@@ -54,14 +54,14 @@ export default function WorkspaceLayout() {
           <Navbar>
             <SidebarTrigger />
           </Navbar>
-          <div>
+          <div className="pt-[57px]">
             {workspaceQuery.isError ? (
-              <Card className="rounded-3xl border-destructive/30 bg-destructive/5">
-                <CardContent className="flex items-center gap-3 p-6 text-sm text-destructive">
+              <DashedPanel className="m-6 border border-destructive/30 bg-destructive/5 p-6">
+                <div className="flex items-center gap-3 text-sm text-destructive">
                   <DatabaseZap className="size-4" />
                   <span>Unable to load this workspace right now.</span>
-                </CardContent>
-              </Card>
+                </div>
+              </DashedPanel>
             ) : null}
 
             <Outlet />

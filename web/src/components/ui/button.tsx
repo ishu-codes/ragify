@@ -19,6 +19,9 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        pill: "bg-brand text-brand-foreground hover:bg-brand/85 shadow duration-300 rounded-[100px] font-medium",
+        outlinePill:
+          "border border-input bg-transparent text-foreground rounded-[100px] shadow hover:bg-muted/80 duration-300 font-medium",
       },
       size: {
         default:
@@ -26,6 +29,8 @@ const buttonVariants = cva(
         xs: "h-6 gap-1 px-2.5 text-xs has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-8 gap-1 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
         lg: "h-10 gap-1.5 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
+        pill: "h-10 gap-2 px-6 sm:px-[20px]",
+        pillLg: "h-12 gap-2 px-7 text-base sm:px-[24px]",
         icon: "size-9",
         "icon-xs": "size-6 [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8",

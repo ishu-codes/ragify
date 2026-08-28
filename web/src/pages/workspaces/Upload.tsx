@@ -19,12 +19,12 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSession } from "@/hooks/useAuthSession";
 import { workspaceApi } from "@/lib/api";
 import type { UploadStatusFile, WorkspaceMaterial } from "@/lib/types";
 import { useWorkspaceUpload } from "./UploadContext";
 import { cn } from "@/lib/utils";
+import { DashedPanel } from "@/components/marketing/DashedPanel";
 
 function formatBytes(size: number) {
   if (size < 1024) return `${size} B`;
@@ -51,8 +51,8 @@ function MaterialIcon({ kind }: { kind: string }) {
 
 function MaterialCard({ material }: { material: WorkspaceMaterial }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border bg-card p-3.5 transition-colors hover:border-primary/30">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+    <div className="flex items-center gap-3 border border-border bg-card p-3.5 transition-colors hover:border-brand/30">
+      <div className="flex size-10 shrink-0 items-center justify-center bg-muted">
         <MaterialIcon kind={material.kind} />
       </div>
       <div className="min-w-0">
@@ -133,23 +133,21 @@ export default function WorkspaceUploadPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="container space-y-8 py-10">
       {/* UPLOAD CARD */}
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
-              <UploadCloud className="size-5" />
-            </div>
-            <div className="space-y-1">
-              <CardTitle className="text-lg font-semibold tracking-tight">Upload source materials</CardTitle>
-              <CardDescription className="text-xs">
-                Add PDFs, Markdown files, code, or JSON datasets to index into this workspace vector store.
-              </CardDescription>
-            </div>
+      <DashedPanel className="bg-card p-6 sm:p-8">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 items-center justify-center bg-brand/10 text-brand-text ring-1 ring-brand/20">
+            <UploadCloud className="size-5" />
           </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold tracking-tight">Upload source materials</h2>
+            <p className="text-xs text-muted-foreground">
+              Add PDFs, Markdown files, code, or JSON datasets to index into this workspace vector store.
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 space-y-6">
           <input
             ref={inputRef}
             className="hidden"
@@ -160,10 +158,8 @@ export default function WorkspaceUploadPage() {
 
           <div
             className={cn(
-              "flex min-h-56 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-200",
-              isDragOver
-                ? "border-primary bg-primary/[0.06] scale-[0.99]"
-                : "border-border bg-muted/20 hover:border-primary/50 hover:bg-primary/[0.04]",
+              "relative flex min-h-56 w-full cursor-pointer flex-col items-center justify-center border border-dashed border-border bg-muted/20 p-8 text-center transition-all duration-200",
+              isDragOver ? "bg-brand/[0.06] ring-1 ring-brand/50" : "hover:bg-brand/[0.03]",
             )}
             onClick={() => inputRef.current?.click()}
             onDragOver={(event) => {
@@ -177,14 +173,16 @@ export default function WorkspaceUploadPage() {
               addFiles(event.dataTransfer.files);
             }}
           >
-            <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
-              <UploadCloud className="size-6" />
+            <div className="">
+              <div className="mb-4 flex size-14 items-center justify-center bg-brand/10 text-brand-text ring-1 ring-brand/20">
+                <UploadCloud className="size-6" />
+              </div>
             </div>
             <p className="text-sm font-semibold tracking-tight">Drag and drop files here, or click to browse</p>
             <p className="mt-1.5 max-w-md text-xs leading-relaxed text-muted-foreground">
               Supports PDF, Markdown (.md), TypeScript, Python, JSON, and CSV files up to 50 MB each.
             </p>
-            <Button className="mt-6 cursor-pointer rounded-xl shadow-sm" type="button">
+            <Button variant="outlinePill" className="mt-6 cursor-pointer" type="button">
               Choose files
             </Button>
           </div>
@@ -195,7 +193,8 @@ export default function WorkspaceUploadPage() {
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium text-muted-foreground">Ready to upload ({pendingFiles.length})</p>
                 <Button
-                  className="gap-2 cursor-pointer rounded-xl shadow-sm"
+                  variant="pill"
+                  className="gap-2 cursor-pointer"
                   onClick={() => uploadMutation.mutate()}
                   disabled={uploadMutation.isPending}
                 >
@@ -209,10 +208,10 @@ export default function WorkspaceUploadPage() {
                 {pendingFiles.map((file) => (
                   <div
                     key={`${file.name}-${file.size}`}
-                    className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3.5"
+                    className="flex items-center justify-between gap-3 border border-border bg-card p-3.5"
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+                      <div className="flex size-10 shrink-0 items-center justify-center bg-muted">
                         <MaterialIcon kind={file.name.split(".").pop() ?? "file"} />
                       </div>
                       <div className="min-w-0">
@@ -224,7 +223,7 @@ export default function WorkspaceUploadPage() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="size-7 shrink-0 cursor-pointer rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      className="size-7 shrink-0 cursor-pointer text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                       onClick={() => removePendingFile(file)}
                       title="Remove file"
                     >
@@ -235,20 +234,18 @@ export default function WorkspaceUploadPage() {
               </div>
             </div>
           ) : null}
-        </CardContent>
-      </Card>
+        </div>
+      </DashedPanel>
 
       {/* PROCESSING STATUS */}
       {uploadStatus ? (
-        <Card className="rounded-2xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight">
-              {statusIcon(uploadStatus.status)}
-              Vector indexing pipeline
-            </CardTitle>
-            <CardDescription className="text-xs">Files are being chunked and embedded in real time.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <DashedPanel className="bg-card p-6">
+          <div className="flex items-center gap-2 text-base font-semibold tracking-tight">
+            {statusIcon(uploadStatus.status)}
+            Vector indexing pipeline
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">Files are being chunked and embedded in real time.</p>
+          <div className="mt-5 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="rounded-full text-[11px] font-medium">
                 Status: {uploadStatus.status}
@@ -260,9 +257,12 @@ export default function WorkspaceUploadPage() {
 
             <div className="space-y-2">
               {uploadStatus.files.map((file) => (
-                <div key={file.id} className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3.5">
+                <div
+                  key={file.id}
+                  className="flex items-center justify-between gap-3 border border-border bg-card p-3.5"
+                >
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+                    <div className="flex size-10 shrink-0 items-center justify-center bg-muted">
                       <MaterialIcon kind={file.kind} />
                     </div>
                     <div className="min-w-0">
@@ -279,20 +279,18 @@ export default function WorkspaceUploadPage() {
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </DashedPanel>
       ) : null}
 
       {/* EXISTING MATERIALS LIST */}
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight">
-            <FilesIcon className="size-4 text-primary" />
-            Indexed workspace materials
-          </CardTitle>
-          <CardDescription className="text-xs">Source files currently active in this workspace.</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <DashedPanel className="bg-card p-6">
+        <div className="flex items-center gap-2 text-base font-semibold tracking-tight">
+          <FilesIcon className="size-4 text-brand-text" />
+          Indexed workspace materials
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">Source files currently active in this workspace.</p>
+        <div className="mt-5">
           {workspaceQuery.data?.materials.length ? (
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {workspaceQuery.data.materials.map((material) => (
@@ -300,12 +298,12 @@ export default function WorkspaceUploadPage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed bg-muted/20 p-8 text-center text-xs text-muted-foreground">
+            <div className="border border-dashed border-border bg-muted/20 p-8 text-center text-xs text-muted-foreground">
               No materials uploaded to this workspace yet. Use the dropzone above to add documents.
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </DashedPanel>
     </div>
   );
 }

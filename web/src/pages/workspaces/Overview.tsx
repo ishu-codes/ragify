@@ -12,12 +12,12 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSession } from "@/hooks/useAuthSession";
 import { workspaceApi } from "@/lib/api";
 import { readWorkspaceSession } from "@/lib/workspace-session";
 import type { WorkspaceSession } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { DashedPanel } from "@/components/marketing/DashedPanel";
 
 function formatTime(value: string) {
   return new Intl.DateTimeFormat(undefined, { timeStyle: "short" }).format(new Date(value));
@@ -77,9 +77,10 @@ export default function WorkspaceOverviewPage() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="container space-y-8 py-10">
       {/* HEADER */}
-      <header className="space-y-4">
+      <DashedPanel className="bg-card p-6 sm:p-8">
+        <div className="space-y-4">
         <nav className="flex items-center gap-1 text-xs text-muted-foreground">
           <Link to="/workspaces" className="font-medium transition-colors hover:text-foreground">
             Workspaces
@@ -103,7 +104,7 @@ export default function WorkspaceOverviewPage() {
             <div className="flex flex-wrap gap-1.5">
               {workspaceQuery.data?.tags.length ? (
                 workspaceQuery.data.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="rounded-full text-[11px] font-medium">
+                  <Badge key={tag} variant="secondary" className="rounded-full font-mono text-[11px] font-medium">
                     {tag}
                   </Badge>
                 ))
@@ -115,20 +116,21 @@ export default function WorkspaceOverviewPage() {
             </div>
           </div>
 
-          <Button asChild size="lg" className="shrink-0 gap-2 rounded-xl shadow-sm">
+          <Button asChild size="lg" variant="pill" className="shrink-0 gap-2">
             <Link to={`/workspaces/${workspaceId}/chat`}>
               Open chat
               <ArrowRight className="size-4" />
             </Link>
           </Button>
         </div>
-      </header>
+        </div>
+      </DashedPanel>
 
       {/* STATS STRIP */}
-      <div className="grid grid-cols-2 divide-x divide-border overflow-hidden rounded-2xl border bg-card lg:grid-cols-4">
+      <DashedPanel className="grid grid-cols-2 bg-card lg:grid-cols-4">
         {stats.map((stat) => (
           <div key={stat.label} className="flex items-center gap-3 p-4 sm:p-5">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/[0.08] text-primary">
+            <div className="flex size-9 shrink-0 items-center justify-center bg-brand/10 text-brand-text">
               <stat.icon className="size-4" />
             </div>
             <div className="min-w-0">
@@ -137,7 +139,7 @@ export default function WorkspaceOverviewPage() {
             </div>
           </div>
         ))}
-      </div>
+      </DashedPanel>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.9fr)]">
         {/* ACTIONS */}
@@ -148,13 +150,13 @@ export default function WorkspaceOverviewPage() {
               <Link
                 key={action.title}
                 to={action.href}
-                className="group rounded-2xl border bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_12px_32px_-20px] hover:shadow-primary/20"
+                className="group relative border border-border bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-20px] hover:shadow-brand/25"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
+                  <div className="flex size-10 items-center justify-center bg-brand/10 text-brand-text ring-1 ring-brand/20">
                     <action.icon className="size-5" />
                   </div>
-                  <ArrowRight className="size-4 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
+                  <ArrowRight className="size-4 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-brand-text" />
                 </div>
                 <p className="mt-4 text-sm font-semibold tracking-tight">{action.title}</p>
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{action.description}</p>
@@ -164,16 +166,16 @@ export default function WorkspaceOverviewPage() {
         </section>
 
         {/* RECENT LOCAL CONVERSATION */}
-        <Card className="h-fit rounded-2xl">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold tracking-tight">Recent local conversation</CardTitle>
-            <CardDescription className="text-xs">
+        <DashedPanel className="h-fit bg-card p-6">
+          <div className="space-y-1.5">
+            <h2 className="text-base font-semibold tracking-tight">Recent local conversation</h2>
+            <p className="text-xs text-muted-foreground">
               Messages persisted in this browser for the current workspace.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
+            </p>
+          </div>
+          <div className="mt-5 space-y-3">
             {chatSession.messages.length === 0 ? (
-              <div className="rounded-xl border border-dashed bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+              <div className="border border-dashed border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
                 No local conversation yet. Start in chat after you upload some materials.
               </div>
             ) : (
@@ -181,21 +183,21 @@ export default function WorkspaceOverviewPage() {
                 .slice(-4)
                 .reverse()
                 .map((message) => (
-                  <div key={message.id} className="rounded-xl border bg-background/70 p-4">
+                  <div key={message.id} className="border border-border bg-background/70 p-4">
                     <div className="mb-2 flex items-center justify-between text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                       <span>{message.role}</span>
                       <span>{formatTime(message.createdAt)}</span>
                     </div>
                     <p className="line-clamp-4 text-sm leading-6 break-words whitespace-pre-wrap">{message.content}</p>
                   </div>
-                ))
+              ))
             )}
 
-            <Button asChild className="w-full rounded-xl shadow-sm">
+            <Button asChild variant="pill" className="w-full">
               <Link to={`/workspaces/${workspaceId}/chat`}>Open workspace chat</Link>
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </DashedPanel>
       </div>
     </div>
   );

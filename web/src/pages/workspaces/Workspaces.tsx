@@ -19,12 +19,12 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/hooks/useAuthSession";
 import { workspaceApi } from "@/lib/api";
 import { Navbar } from "@/components/workspaces";
 import Logo from "@/components/Logo";
+import { DashedPanel } from "@/components/marketing/DashedPanel";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
@@ -182,12 +182,12 @@ export default function WorkspacesPage() {
     return (
       <main className="w-full min-h-screen bg-muted/20">
         <Navbar />
-        <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-          <Skeleton className="h-40 w-full rounded-2xl" />
-          <Skeleton className="h-20 w-full max-w-md rounded-2xl" />
+        <div className="container space-y-8 py-10">
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-20 w-full max-w-md" />
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-52 rounded-2xl" />
+              <Skeleton key={i} className="h-52" />
             ))}
           </div>
         </div>
@@ -200,14 +200,14 @@ export default function WorkspacesPage() {
   }
 
   return (
-    <main className="w-full min-h-screen bg-muted/20 pb-16">
+    <main className="w-full min-h-screen bg-background pb-16">
       <Navbar>
         <Logo />
       </Navbar>
 
-      <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="container space-y-8 py-10">
         {/* HERO */}
-        <section className="relative overflow-hidden rounded-2xl border bg-card px-6 py-8 sm:px-10 sm:py-10">
+        <DashedPanel className="bg-card px-6 py-8 sm:px-10 sm:py-10">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,color-mix(in_oklch,var(--primary)_12%,transparent),transparent_55%)]"
@@ -228,7 +228,8 @@ export default function WorkspacesPage() {
             <div className="flex shrink-0">
               <Button
                 size="lg"
-                className="gap-2 rounded-xl shadow-sm"
+                variant="pill"
+                className="gap-2"
                 onClick={() => {
                   resetModalState();
                   setIsModalOpen(true);
@@ -239,30 +240,26 @@ export default function WorkspacesPage() {
               </Button>
             </div>
           </div>
-        </section>
+        </DashedPanel>
 
         {/* METRICS & SEARCH */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="grid w-fit grid-cols-2 divide-x divide-border overflow-hidden rounded-2xl border bg-card">
+          <DashedPanel className="grid w-fit grid-cols-2 bg-card">
             <div className="flex items-center gap-3 p-4 sm:p-5">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/[0.08] text-primary">
-                <Layers className="size-4" />
-              </div>
+              <span className="font-mono text-xs text-brand-text">{"//"}</span>
               <div>
                 <p className="text-lg leading-none font-semibold tabular-nums">{workspacesQuery.data?.length || 0}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Workspaces</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 sm:p-5">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/[0.08] text-primary">
-                <FilesIcon className="size-4" />
-              </div>
+              <span className="font-mono text-xs text-brand-text">{"//"}</span>
               <div>
                 <p className="text-lg leading-none font-semibold tabular-nums">{totalMaterials}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Files indexed</p>
               </div>
             </div>
-          </div>
+          </DashedPanel>
 
           <div className="relative lg:w-80 xl:w-96">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -271,7 +268,7 @@ export default function WorkspacesPage() {
               placeholder="Search workspaces by name or tag..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 rounded-xl border-border bg-card pl-9 text-sm focus-visible:ring-primary/25"
+              className="h-10 rounded-md border-border bg-card pl-9 text-sm focus-visible:ring-brand/40"
             />
           </div>
         </div>
@@ -309,16 +306,16 @@ export default function WorkspacesPage() {
         {/* WORKSPACES GRID */}
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {filteredWorkspaces.map((workspace, index) => (
-            <Card
+            <DashedPanel
               key={workspace.id}
-              className="group relative cursor-pointer overflow-hidden rounded-2xl border bg-card transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_16px_48px_-24px] hover:shadow-primary/20"
+              className="group relative flex cursor-pointer flex-col bg-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_48px_-24px] hover:shadow-brand/25"
               onClick={() => navigate(`/workspaces/${workspace.id}`)}
             >
-              <CardHeader className="gap-4 p-5">
+              <div className="flex-1 space-y-4 p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
-                    <Layers className="size-5" />
-                  </div>
+                  <span className="font-mono text-sm font-semibold text-brand-text">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
 
                   <Popover
                     open={editingWorkspaceId === workspace.id}
@@ -334,7 +331,7 @@ export default function WorkspacesPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="size-8 cursor-pointer rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground"
+                        className="size-8 cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
                         <MoreVerticalIcon className="size-4" />
                       </Button>
@@ -345,7 +342,7 @@ export default function WorkspacesPage() {
                       onClick={(event) => event.stopPropagation()}
                     >
                       <Button
-                        className="h-8 w-full justify-start gap-2 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        className="h-8 w-full justify-start gap-2 text-xs font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
                         onClick={() => deleteMutation.mutate(workspace.id)}
                         disabled={deleteMutation.isPending}
                         variant="ghost"
@@ -357,15 +354,15 @@ export default function WorkspacesPage() {
                 </div>
 
                 <div className="min-w-0 space-y-1.5">
-                  <CardTitle className="truncate text-base font-semibold tracking-tight transition-colors group-hover:text-primary">
+                  <p className="truncate text-base font-semibold tracking-tight transition-colors group-hover:text-brand-text">
                     {workspace.name || `Workspace ${String(index + 1).padStart(2, "0")}`}
-                  </CardTitle>
+                  </p>
                   <p className="text-[10px] font-medium text-muted-foreground">
                     Created {formatDate(workspace.created_at)}
                   </p>
-                  <CardDescription className="line-clamp-2 text-xs leading-relaxed">
+                  <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                     {workspace.description || "No description yet. Add details in settings."}
-                  </CardDescription>
+                  </p>
                 </div>
 
                 <div className="flex flex-wrap gap-1.5">
@@ -381,9 +378,9 @@ export default function WorkspacesPage() {
                     </Badge>
                   )}
                 </div>
-              </CardHeader>
+              </div>
 
-              <div className="mt-auto flex items-center justify-between gap-3 border-t bg-muted/20 px-5 py-3">
+              <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/20 px-5 py-3">
                 <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                   <FilesIcon className="size-3.5" />
                   {workspace.materials?.length || 0} material{workspace.materials?.length === 1 ? "" : "s"}
@@ -393,7 +390,7 @@ export default function WorkspacesPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-8 cursor-pointer rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                    className="size-8 cursor-pointer text-muted-foreground hover:bg-brand/10 hover:text-brand-text"
                     title="Open chat"
                     onClick={() => navigate(`/workspaces/${workspace.id}/chat`)}
                   >
@@ -402,7 +399,7 @@ export default function WorkspacesPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-8 cursor-pointer rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                    className="size-8 cursor-pointer text-muted-foreground hover:bg-brand/10 hover:text-brand-text"
                     title="Upload files"
                     onClick={() => navigate(`/workspaces/${workspace.id}/upload`)}
                   >
@@ -411,7 +408,7 @@ export default function WorkspacesPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-8 cursor-pointer rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                    className="size-8 cursor-pointer text-muted-foreground hover:bg-brand/10 hover:text-brand-text"
                     title="Settings"
                     onClick={() => navigate(`/workspaces/${workspace.id}/settings`)}
                   >
@@ -419,15 +416,15 @@ export default function WorkspacesPage() {
                   </Button>
                 </div>
               </div>
-            </Card>
+            </DashedPanel>
           ))}
         </div>
 
         {/* EMPTY STATE */}
         {filteredWorkspaces.length === 0 && !workspacesQuery.isLoading && (
-          <Card className="mx-auto max-w-xl rounded-2xl border-dashed bg-card p-10 text-center">
-            <CardContent className="flex flex-col items-center gap-5 px-0">
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
+          <DashedPanel className="mx-auto max-w-xl bg-card p-10 text-center">
+            <div className="flex flex-col items-center gap-5">
+              <div className="flex size-12 items-center justify-center bg-brand/10 text-brand-text ring-1 ring-brand/20">
                 <FolderPlusIcon className="size-6" />
               </div>
               <div className="space-y-1.5">
@@ -442,7 +439,8 @@ export default function WorkspacesPage() {
               </div>
               <Button
                 size="lg"
-                className="gap-2 rounded-xl shadow-sm"
+                variant="pill"
+                className="gap-2"
                 onClick={() => {
                   resetModalState();
                   setIsModalOpen(true);
@@ -450,17 +448,17 @@ export default function WorkspacesPage() {
               >
                 <Plus className="size-4" /> Create first workspace
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </DashedPanel>
         )}
       </div>
 
       {/* NEW WORKSPACE CREATION DIALOG */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="rounded-2xl p-6 sm:max-w-[540px] sm:p-8">
+        <DialogContent className="p-6 sm:max-w-[540px] sm:p-8">
           <DialogHeader className="space-y-2">
             <DialogTitle className="flex items-center gap-3 text-xl font-semibold tracking-tight">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-primary/[0.08] text-primary">
+              <span className="flex size-9 items-center justify-center bg-brand/10 text-brand-text">
                 <FolderPlusIcon className="size-4" />
               </span>
               New workspace
@@ -478,9 +476,9 @@ export default function WorkspacesPage() {
                   key={i}
                   type="button"
                   onClick={() => handleSelectTemplate(tpl)}
-                  className="space-y-2 rounded-xl border bg-muted/20 p-3 text-left transition-all hover:border-primary/40 hover:bg-primary/[0.06] cursor-pointer"
+                  className="space-y-2 border bg-muted/20 p-3 text-left transition-all hover:border-brand/40 hover:bg-brand/[0.06] cursor-pointer"
                 >
-                  <tpl.icon className="size-4 text-primary" />
+                  <tpl.icon className="size-4 text-brand-text" />
                   <p className="line-clamp-2 text-[11px] leading-tight font-semibold">{tpl.name}</p>
                 </button>
               ))}
@@ -497,7 +495,7 @@ export default function WorkspacesPage() {
                 placeholder="e.g. Q3 Financial Reports or React Architecture"
                 value={newWsName}
                 onChange={(e) => setNewWsName(e.target.value)}
-                className="h-10 rounded-xl text-sm"
+                className="h-10 rounded-md text-sm"
               />
             </div>
 
@@ -510,7 +508,7 @@ export default function WorkspacesPage() {
                 placeholder="Brief summary of the documents and knowledge stored in this workspace..."
                 value={newWsDescription}
                 onChange={(e) => setNewWsDescription(e.target.value)}
-                className="h-20 rounded-xl text-sm"
+                className="h-20 rounded-md text-sm"
               />
             </div>
 
@@ -523,7 +521,7 @@ export default function WorkspacesPage() {
                 placeholder="e.g. codebase, pdfs, finance"
                 value={newWsTags}
                 onChange={(e) => setNewWsTags(e.target.value)}
-                className="h-10 rounded-xl text-sm"
+                className="h-10 rounded-md text-sm"
               />
             </div>
           </div>
@@ -531,15 +529,16 @@ export default function WorkspacesPage() {
           <DialogFooter className="gap-2 pt-2 sm:gap-0">
             <Button
               type="button"
-              variant="outline"
+              variant="outlinePill"
               onClick={() => setIsModalOpen(false)}
-              className="cursor-pointer rounded-xl text-sm font-medium"
+              className="cursor-pointer text-sm font-medium"
             >
               Cancel
             </Button>
             <Button
               type="button"
-              className="gap-2 cursor-pointer rounded-xl shadow-sm"
+              variant="pill"
+              className="gap-2 cursor-pointer"
               onClick={() => createMutation.mutate()}
               disabled={createMutation.isPending}
             >

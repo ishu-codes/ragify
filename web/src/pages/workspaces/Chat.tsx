@@ -2,13 +2,11 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Brain,
   Check,
   ChevronRight,
   Copy,
   Lightbulb,
   LoaderCircle,
-  MessageSquare,
   Plus,
   Search,
   SendHorizonalIcon,
@@ -30,6 +28,7 @@ import { createWorkspaceMessage, writeWorkspaceSession } from "@/lib/workspace-s
 import type { WorkspaceSession, WorkspaceSessionSummary, WorkspaceMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { DashedPanel } from "@/components/marketing/DashedPanel";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -318,19 +317,18 @@ export default function WorkspaceChatPage() {
   }, [displayMessages, queryMutation.isPending]);
 
   return (
-    <div className="flex h-[calc(100dvh-4rem)] w-full overflow-hidden">
+    <div className="flex h-[calc(100dvh-57px)] w-full overflow-hidden">
       {/* SESSIONS SIDEBAR */}
-      <aside className="flex w-72 shrink-0 flex-col gap-4 border-r bg-muted/25 p-4 lg:w-80">
+      <aside className="flex w-72 shrink-0 flex-col gap-4 border-r border-border bg-muted/25 p-4 lg:w-80">
         <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="size-4 text-primary" />
-            <h2 className="text-sm font-semibold tracking-tight">Sessions</h2>
-          </div>
+          <h2 className="font-mono text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            {"//sessions"}
+          </h2>
           <Button
             variant="ghost"
             size="icon"
             onClick={handleNewSession}
-            className="size-8 cursor-pointer rounded-xl hover:bg-primary/10 hover:text-primary"
+            className="size-8 cursor-pointer hover:bg-brand/10 hover:text-brand-text"
             title="Start new session"
           >
             <Plus className="size-4" />
@@ -343,7 +341,7 @@ export default function WorkspaceChatPage() {
             placeholder="Search sessions..."
             value={sessionSearch}
             onChange={(e) => setSessionSearch(e.target.value)}
-            className="h-9 rounded-xl border-border bg-card pl-8.5 text-sm"
+            className="h-9 rounded-md border-border bg-card pl-8.5 text-sm"
           />
         </div>
 
@@ -352,14 +350,14 @@ export default function WorkspaceChatPage() {
             <div
               key={item.id}
               className={cn(
-                "group flex w-full items-center rounded-xl border transition-all",
+                "group flex w-full items-center border transition-all",
                 activeSession.sessionId === item.id
-                  ? "border-primary/40 bg-primary/[0.07]"
+                  ? "border-brand/40 bg-brand/[0.07]"
                   : "border-transparent bg-card hover:bg-muted/60",
               )}
             >
               <button onClick={() => handleSelectSession(item)} className="min-w-0 flex-1 cursor-pointer p-3 text-left">
-                <p className={cn("truncate text-xs", activeSession.sessionId === item.id ? "font-semibold" : "font-medium")}>
+                <p className={cn("truncate font-mono text-xs", activeSession.sessionId === item.id ? "font-semibold" : "font-medium")}>
                   {item.name}
                 </p>
                 <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{formatDate(item.created_at)}</p>
@@ -367,7 +365,7 @@ export default function WorkspaceChatPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="mr-1.5 size-7 shrink-0 cursor-pointer rounded-lg text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                className="mr-1.5 size-7 shrink-0 cursor-pointer text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                 onClick={(e) => handleDeleteSession(item.id, e)}
                 disabled={deleteSessionMutation.isPending}
                 title="Delete session"
@@ -379,8 +377,8 @@ export default function WorkspaceChatPage() {
 
           {sessionsQuery.isLoading && (
             <div className="space-y-2">
-              <Skeleton className="h-14 w-full rounded-xl" />
-              <Skeleton className="h-14 w-full rounded-xl" />
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
             </div>
           )}
 
@@ -396,9 +394,9 @@ export default function WorkspaceChatPage() {
         <div ref={containerRef} className="flex-1 space-y-6 overflow-y-auto px-4 py-6 sm:px-6">
           {isLoadingMessages && (
             <div className="mr-auto max-w-3xl space-y-4">
-              <Skeleton className="h-20 w-3/4 rounded-2xl" />
-              <Skeleton className="ml-auto h-14 w-2/3 rounded-2xl" />
-              <Skeleton className="h-28 w-3/4 rounded-2xl" />
+              <Skeleton className="h-20 w-3/4" />
+              <Skeleton className="ml-auto h-14 w-2/3" />
+              <Skeleton className="h-28 w-3/4" />
             </div>
           )}
 
@@ -406,8 +404,8 @@ export default function WorkspaceChatPage() {
           {!isLoadingMessages && displayMessages.length === 0 && (
             <div className="mx-auto max-w-2xl animate-in fade-in duration-300 py-12">
               <div className="space-y-3 text-center">
-                <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
-                  <Brain className="size-6" />
+                <div className="mx-auto flex size-12 items-center justify-center bg-brand/10 font-mono text-sm font-semibold text-brand-text ring-1 ring-brand/20">
+                  {"//ragify"}
                 </div>
                 <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">Chat with your workspace</h3>
                 <p className="mx-auto max-w-md text-sm leading-relaxed text-muted-foreground">
@@ -423,14 +421,15 @@ export default function WorkspaceChatPage() {
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {PROMPT_STARTERS.map((starter, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handlePromptStarter(starter)}
-                      className="group flex cursor-pointer items-center justify-between gap-3 rounded-xl border bg-card p-4 text-left text-xs font-medium transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/[0.04] hover:shadow-[0_10px_28px_-20px] hover:shadow-primary/20"
-                    >
-                      <span className="leading-relaxed">{starter}</span>
-                      <ChevronRight className="size-3.5 shrink-0 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
-                    </button>
+                    <DashedPanel key={i} className="bg-card">
+                      <button
+                        onClick={() => handlePromptStarter(starter)}
+                        className="group flex w-full cursor-pointer items-center justify-between gap-3 p-4 text-left text-xs font-medium transition-all hover:bg-muted/30"
+                      >
+                        <span className="leading-relaxed">{starter}</span>
+                        <ChevronRight className="size-3.5 shrink-0 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-brand-text" />
+                      </button>
+                    </DashedPanel>
                   ))}
                 </div>
               </div>
@@ -448,13 +447,13 @@ export default function WorkspaceChatPage() {
                 )}
               >
                 {message.role === "assistant" ? (
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <Brain className="size-4" />
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand font-mono text-[10px] font-semibold text-brand-foreground">
+                    {"//"}
                   </div>
                 ) : (
                   <Avatar className="size-8 shrink-0">
                     <AvatarImage src={session?.user.image ?? ""} alt={session?.user.name ?? "You"} />
-                    <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                    <AvatarFallback className="bg-brand/10 text-xs font-semibold text-brand-text">
                       {session?.user.name?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
@@ -463,19 +462,21 @@ export default function WorkspaceChatPage() {
                 <div className="min-w-0 max-w-[85%] space-y-1.5">
                   <div
                     className={cn(
-                      "rounded-2xl p-4 text-sm leading-relaxed shadow-sm",
+                      "border p-4 text-sm leading-relaxed",
                       message.role === "assistant"
-                        ? "border bg-card"
-                        : "bg-primary font-medium text-primary-foreground",
+                        ? "border-border bg-card"
+                        : "border-brand/40 bg-brand font-medium text-brand-foreground",
                     )}
                   >
                     {parseContent(cleanMarkdownContent(message.content)).map((part, idx) =>
                       part.type === "thinking" ? (
-                        <div
-                          key={idx}
-                          className="mb-3 rounded-xl border border-border/60 bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground italic"
-                        >
-                          <ReactMarkdown>{part.content}</ReactMarkdown>
+                        <div key={idx} className="mb-3 border border-border/60 bg-muted/50 p-3">
+                          <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                            {"[Thinking]"}
+                          </p>
+                          <div className="text-xs leading-relaxed text-muted-foreground italic">
+                            <ReactMarkdown>{part.content}</ReactMarkdown>
+                          </div>
                         </div>
                       ) : (
                         <div key={idx} className="markdown-body break-words">
@@ -509,20 +510,21 @@ export default function WorkspaceChatPage() {
           {/* STREAMING LOADING INDICATOR */}
           {queryMutation.isPending && (
             <div className="mr-auto flex max-w-3xl animate-pulse gap-3">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Brain className="size-4" />
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand font-mono text-[10px] font-semibold text-brand-foreground">
+                {"//"}
               </div>
-              <div className="flex items-center gap-2 rounded-2xl border bg-card p-4 text-xs font-medium text-muted-foreground">
-                <LoaderCircle className="size-3.5 animate-spin text-primary" />
-                Retrieving context and generating answer...
+              <div className="flex items-center gap-2 border border-border bg-card p-4 text-xs font-medium text-muted-foreground">
+                <LoaderCircle className="size-3.5 animate-spin text-brand-text" />
+                <span className="font-mono">{"//[Thinking]"}</span>
+                <span>Retrieving context and generating answer...</span>
               </div>
             </div>
           )}
         </div>
 
         {/* INPUT PROMPT BAR */}
-        <form className="w-full border-t bg-background/95 px-4 py-4 backdrop-blur sm:px-6" onSubmit={handleSubmit}>
-          <div className="flex items-center gap-2 rounded-2xl border bg-card p-2 shadow-sm transition-all focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/20">
+        <form className="w-full border-t border-border bg-background/95 px-4 py-4 backdrop-blur sm:px-6" onSubmit={handleSubmit}>
+          <div className="flex items-center gap-2 border border-border bg-card p-2 transition-all focus-within:border-brand focus-within:ring-[3px] focus-within:ring-brand/20">
             <Input
               type="text"
               className="h-11 border-0 bg-transparent px-3 text-sm shadow-none focus-visible:ring-0"
@@ -539,7 +541,8 @@ export default function WorkspaceChatPage() {
               <Button
                 type="button"
                 size="icon"
-                className="size-10 shrink-0 cursor-pointer rounded-xl shadow-sm"
+                variant="pill"
+                className="size-10 shrink-0 cursor-pointer rounded-full"
                 onClick={handleStop}
                 title="Stop generating"
               >
@@ -549,7 +552,8 @@ export default function WorkspaceChatPage() {
               <Button
                 type="submit"
                 size="icon"
-                className="size-10 shrink-0 cursor-pointer rounded-xl shadow-sm"
+                variant="pill"
+                className="size-10 shrink-0 cursor-pointer rounded-full"
                 disabled={!prompt.trim()}
                 title="Send message"
               >
