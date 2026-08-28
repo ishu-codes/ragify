@@ -9,7 +9,8 @@ Adaptive RAG app for building per-workspace knowledge bases: upload documents in
 | Directory                                   | Role                                                          | Tech                                       |
 | ------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------ |
 | [`web/`](web/README.md)                     | Browser app: landing page, auth, workspaces, chat, uploads    | Vite, React 19, TypeScript, Tailwind v4    |
-| [`api-python/`](api-python/README.md)       | HTTP API: auth, workspaces, uploads, sessions, query          | FastAPI, SQLAlchemy (async), asyncpg       |
+| [`api-python/`](api-python/README.md)       | HTTP API (**production backend**): auth, workspaces, uploads, sessions, query | FastAPI, SQLAlchemy (async), asyncpg       |
+| [`api-java/`](api-java/README.md)           | Java port of the HTTP API (same endpoints as api-python)      | Spring Boot 4, Java 21, Gradle, gRPC client |
 | [`rag/`](rag/README.md)                     | RAG gRPC server: ingestion, embeddings, retrieval, generation | Python, gRPC, LangGraph, LangChain, Qdrant |
 | [`infra/`](infra/docker/docker-compose.yml) | Local infra via Docker Compose                                | PostgreSQL, Qdrant, Grobid                 |
 
@@ -210,3 +211,5 @@ make grpc-gen      # regenerate gRPC stubs from ragify.proto
 - Workspace uploads are stored under `api-python/storage/workspaces/<workspace_id>/`.
 - Qdrant collections are created per workspace id.
 - The API service intentionally contains no AI/ML code: all ingestion, retrieval and generation happens in `rag/`.
+- `api-python` is the production backend; `api-java` is a contract-validating port
+  with the same endpoints and data model.
