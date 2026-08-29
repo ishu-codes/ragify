@@ -1,0 +1,3 @@
+[submodule "api-java"]
+	path = api-java
+	url = https://github.com/ishu-codes/ragify-api-java
