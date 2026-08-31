@@ -1,0 +1,50 @@
+# Builds the three Ragify container images and pushes them to Artifact Registry.
+#
+# Usage (full build):
+#   gcloud builds submit --config cloudbuild.yaml \
+#     --substitutions=_API_URL=https://ragify-api-<hash>-uc.a.run.app
+#
+# _API_URL is the public URL of the deployed ragify-api service; web-next bakes
+# it into the client bundle at build time. For the first deploy pass it can be
+# any URL (web image is rebuilt with the real URL afterwards) -- see
+# deploy/gcp/README.md for the exact two-pass flow.
+steps:
+  - id: build-web-next
+    name: gcr.io/cloud-builders/docker
+    dir: web-next
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/web-next:${_TAG}
+      - --build-arg
+      - NEXT_PUBLIC_API_URL=${_API_URL}
+      - .
+
+  - id: build-api-python
+    name: gcr.io/cloud-builders/docker
+    dir: api-python
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/api-python:${_TAG}
+      - .
+
+  - id: build-rag
+    name: gcr.io/cloud-builders/docker
+    dir: rag
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/rag:${_TAG}
+      - .
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/web-next:${_TAG}
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/api-python:${_TAG}
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/rag:${_TAG}
+
+substitutions:
+  _REGION: us-central1
+  _REPO: ragify
+  _TAG: latest
+  _API_URL: http://localhost:8000

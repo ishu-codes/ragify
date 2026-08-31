@@ -206,6 +206,12 @@ make ragify-server # run the RAG gRPC server
 make grpc-gen      # regenerate gRPC stubs from ragify.proto
 ```
 
+## Deployment
+
+See [`deploy/gcp/README.md`](deploy/gcp/README.md) for the minimal-cost Google
+Cloud deployment (Cloud Run + Cloud SQL + Qdrant Cloud free tier), including
+the `cloudbuild.yaml` pipeline and the `deploy/gcp/deploy.sh` script.
+
 ## Notes
 
 - Workspace uploads are stored under `api-python/storage/workspaces/<workspace_id>/`.
