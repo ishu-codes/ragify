@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
   CircleAlert,
@@ -104,6 +104,8 @@ export default function WorkspaceUploadPage() {
     enabled: Boolean(accessToken && workspaceId),
   });
 
+  const queryClient = useQueryClient();
+
   const uploadMutation = useMutation({
     mutationFn: () => {
       if (!workspaceId || !session || pendingFiles.length === 0) {
@@ -123,6 +125,7 @@ export default function WorkspaceUploadPage() {
         inputRef.current.value = "";
       }
       toast.success(message || "Files uploaded. Processing started.");
+      queryClient.invalidateQueries({ queryKey: ["session"] });
     },
     onError: (error) => {
       toast.error(error.message);

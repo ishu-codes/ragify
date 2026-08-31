@@ -97,13 +97,6 @@ export default function WorkspaceOverviewPage() {
       icon: UploadCloud,
     },
     {
-      title: "History",
-      description:
-        "Review, rename, and delete backend chat sessions for this workspace.",
-      href: `/workspaces/${workspaceId}/history`,
-      icon: HistoryIcon,
-    },
-    {
       title: "Settings",
       description:
         "Edit workspace metadata and clear the local browser chat cache.",

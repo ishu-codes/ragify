@@ -14,6 +14,32 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION || "v1";
 const API_PREFIX = `${API_URL}/api/${API_VERSION}/`;
 
+const CLIENT_ID_STORAGE_KEY = "ragify.clientId";
+
+/**
+ * Persistent opaque client id used by the API as a soft rate-limit signal
+ * (combined with IP for anonymous endpoints). Best-effort and resettable;
+ * never sent if storage is unavailable.
+ */
+function getClientId(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+  try {
+    let clientId = window.localStorage.getItem(CLIENT_ID_STORAGE_KEY);
+    if (!clientId) {
+      clientId =
+        typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `client-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+      window.localStorage.setItem(CLIENT_ID_STORAGE_KEY, clientId);
+    }
+    return clientId;
+  } catch {
+    return "";
+  }
+}
+
 type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: BodyInit | object;
@@ -60,6 +86,7 @@ async function request<T>(
         ? { "Content-Type": "application/json" }
         : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(getClientId() ? { "X-Client-ID": getClientId() } : {}),
     },
     body: requestBody,
     signal: options.signal,

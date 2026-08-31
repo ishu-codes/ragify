@@ -15,6 +15,7 @@ import { ThemeToggle } from "@/components/navbar/ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CreditsBadge } from "@/components/CreditsBadge";
 import {
   Popover,
   PopoverContent,
@@ -56,6 +57,7 @@ export function Navbar() {
 
         <div className="hidden items-center gap-3 lg:flex">
           <ThemeToggle />
+          {session && <CreditsBadge credits={session.user.credit_balance} />}
           {isPending ? (
             <div className="h-10 w-24 animate-pulse rounded-full bg-muted" />
           ) : session ? (

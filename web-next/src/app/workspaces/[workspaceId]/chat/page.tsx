@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowLeft,
   Check,
   ChevronRight,
   Copy,
@@ -21,10 +22,16 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import { toast } from "sonner";
 import { DashedPanel } from "@/components/marketing/DashedPanel";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useSession } from "@/hooks/useAuthSession";
 import { workspaceApi } from "@/lib/api";
 import type {
@@ -95,6 +102,332 @@ const PROMPT_STARTERS = [
   "Find security and authentication requirements",
 ];
 
+function SessionsPanel({
+  sessions,
+  activeSessionId,
+  search,
+  onSearchChange,
+  onSelect,
+  onDelete,
+  isLoading,
+  isDeleting,
+}: {
+  sessions: WorkspaceSessionSummary[];
+  activeSessionId: string | null;
+  search: string;
+  onSearchChange: (value: string) => void;
+  onSelect: (item: WorkspaceSessionSummary) => void;
+  onDelete: (sessionId: string, e: React.MouseEvent) => void;
+  isLoading: boolean;
+  isDeleting: boolean;
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="relative">
+        <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search sessions..."
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="h-9 rounded-md border-border bg-card pl-8.5 text-sm"
+        />
+      </div>
+
+      <div className="flex-1 space-y-1 overflow-y-auto pr-1">
+        {sessions.map((item) => (
+          <div
+            key={item.id}
+            className={cn(
+              "group flex w-full items-center border transition-all",
+              activeSessionId === item.id
+                ? "border-brand/40 bg-brand/[0.07]"
+                : "border-transparent bg-card hover:bg-muted/60",
+            )}
+          >
+            <button
+              type="button"
+              onClick={() => onSelect(item)}
+              className="min-w-0 flex-1 cursor-pointer p-3 text-left"
+            >
+              <p
+                className={cn(
+                  "truncate font-mono text-xs",
+                  activeSessionId === item.id ? "font-semibold" : "font-medium",
+                )}
+              >
+                {item.name}
+              </p>
+              <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                {formatDate(item.created_at)}
+              </p>
+            </button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="mr-1.5 size-7 shrink-0 cursor-pointer text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+              onClick={(e) => onDelete(item.id, e)}
+              disabled={isDeleting}
+              title="Delete session"
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          </div>
+        ))}
+
+        {isLoading && (
+          <div className="space-y-2">
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+          </div>
+        )}
+
+        {sessions.length === 0 && !isLoading && (
+          <p className="py-8 text-center text-xs text-muted-foreground">
+            No sessions found.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ChatConversation({
+  messages,
+  isLoadingMessages,
+  isPending,
+  sessionName,
+  userAvatar,
+  copiedMessageId,
+  onCopyMessage,
+  onPromptStarter,
+  onSubmit,
+  onStop,
+  prompt,
+  onPromptChange,
+  scrollRef,
+}: {
+  messages: WorkspaceMessage[];
+  isLoadingMessages: boolean;
+  isPending: boolean;
+  sessionName: string | null;
+  userAvatar: { name?: string; image?: string } | null;
+  copiedMessageId: string | null;
+  onCopyMessage: (content: string, messageId: string) => void;
+  onPromptStarter: (starter: string) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onStop: () => void;
+  prompt: string;
+  onPromptChange: (value: string) => void;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <>
+      {/* MESSAGES SCROLL AREA */}
+      <div
+        ref={scrollRef}
+        className="flex-1 space-y-6 overflow-y-auto px-4 py-6 sm:px-6"
+      >
+        {isLoadingMessages && (
+          <div className="mr-auto max-w-3xl space-y-4">
+            <Skeleton className="h-20 w-3/4" />
+            <Skeleton className="ml-auto h-14 w-2/3" />
+            <Skeleton className="h-28 w-3/4" />
+          </div>
+        )}
+
+        {/* EMPTY CHAT STATE WITH PROMPT STARTERS */}
+        {!isLoadingMessages && messages.length === 0 && (
+          <div className="mx-auto max-w-2xl animate-in fade-in duration-300 py-12">
+            <div className="space-y-3 text-center">
+              <div className="mx-auto flex size-12 items-center justify-center bg-brand/10 font-mono text-sm font-semibold text-brand-text ring-1 ring-brand/20">
+                {"//ragify"}
+              </div>
+              <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                Chat with your workspace
+              </h3>
+              <p className="mx-auto max-w-md text-sm leading-relaxed text-muted-foreground">
+                Ask anything about the documents indexed in this workspace.
+                Ragify extracts relevant context chunks with precise citations.
+              </p>
+            </div>
+
+            <div className="mt-8 space-y-3">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <Lightbulb className="size-3.5 text-primary" />
+                Suggested questions
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {PROMPT_STARTERS.map((starter) => (
+                  <DashedPanel key={starter} className="bg-card">
+                    <button
+                      type="button"
+                      onClick={() => onPromptStarter(starter)}
+                      className="group flex w-full cursor-pointer items-center justify-between gap-3 p-4 text-left text-xs font-medium transition-all hover:bg-muted/30"
+                    >
+                      <span className="leading-relaxed">{starter}</span>
+                      <ChevronRight className="size-3.5 shrink-0 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-brand-text" />
+                    </button>
+                  </DashedPanel>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CHAT MESSAGES DISPLAY */}
+        {!isLoadingMessages &&
+          messages.map((message) => (
+            <div
+              key={message.id}
+              className={cn(
+                "flex max-w-3xl animate-in fade-in gap-3 duration-200",
+                message.role === "assistant"
+                  ? "mr-auto"
+                  : "ml-auto flex-row-reverse",
+              )}
+            >
+              {/*{message.role === "assistant" ? (
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand font-mono text-[10px] font-semibold text-brand-foreground">
+                  {"//"}
+                </div>
+              ) : (
+                <Avatar className="size-8 shrink-0">
+                  <AvatarImage
+                    src={userAvatar?.image ?? ""}
+                    alt={userAvatar?.name ?? "You"}
+                  />
+                  <AvatarFallback className="bg-brand/10 text-xs font-semibold text-brand-text">
+                    {userAvatar?.name?.charAt(0)?.toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+              )}*/}
+
+              <div className={cn("min-w-0 space-y-1.5", message.role === "assistant" ? "w-full" : "max-w-[85%]")}>
+                <div
+                  className={cn(
+                    "p-4 text-sm leading-relaxed",
+                    message.role === "assistant"
+                      ? "w-full"
+                      : "border border-brand/40 bg-brand font-medium text-brand-foreground",
+                  )}
+                >
+                  {parseContent(cleanMarkdownContent(message.content)).map(
+                    (part, idx) =>
+                      part.type === "thinking" ? (
+                        <div
+                          // biome-ignore lint/suspicious/noArrayIndexKey: parts are parsed in order and re-rendered together; no stable per-part id exists
+                          key={`thinking-${idx}`}
+                          className="mb-3 border border-border/60 bg-muted/50 p-3"
+                        >
+                          <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                            {"[Thinking]"}
+                          </p>
+                          <div className="text-xs leading-relaxed text-muted-foreground italic">
+                            <ReactMarkdown>{part.content}</ReactMarkdown>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          // biome-ignore lint/suspicious/noArrayIndexKey: parts are parsed in order and re-rendered together; no stable per-part id exists
+                          key={`text-${idx}`}
+                          className="markdown-body wrap-break-words"
+                        >
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm, remarkMath]}
+                            rehypePlugins={[rehypeKatex]}
+                          >
+                            {part.content}
+                          </ReactMarkdown>
+                        </div>
+                      ),
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onCopyMessage(message.content, message.id)}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                    message.role === "assistant" ? "" : "ml-auto",
+                  )}
+                  title="Copy message"
+                >
+                  {copiedMessageId === message.id ? (
+                    <Check className="size-3 text-emerald-500" />
+                  ) : (
+                    <Copy className="size-3" />
+                  )}
+                  <span>
+                    {copiedMessageId === message.id ? "Copied" : "Copy"}
+                  </span>
+                </button>
+              </div>
+            </div>
+          ))}
+
+        {/* STREAMING LOADING INDICATOR */}
+        {isPending && (
+          <div className="mr-auto flex max-w-3xl animate-pulse gap-3">
+            {/*<div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand font-mono text-[10px] font-semibold text-brand-foreground">
+              {"//"}
+            </div>*/}
+            <div className="flex items-center gap-2 border border-border bg-card p-4 text-xs font-medium text-muted-foreground">
+              <LoaderCircle className="size-3.5 animate-spin text-brand-text" />
+              <span className="font-mono">{"//[Thinking]"}</span>
+              <span>Retrieving context and generating answer...</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* INPUT PROMPT BAR */}
+      <form
+        className="w-full border-t border-border bg-background/95 px-4 py-4 backdrop-blur sm:px-6"
+        onSubmit={onSubmit}
+      >
+        <div className="flex items-center gap-2 border border-border bg-card p-2 transition-all focus-within:border-brand focus-within:ring-[3px] focus-within:ring-brand/20">
+          <Input
+            type="text"
+            className="h-11 border-0 bg-transparent px-3 text-sm shadow-none focus-visible:ring-0"
+            placeholder={
+              sessionName
+                ? "Ask a follow-up question..."
+                : "Ask a question against your workspace documents..."
+            }
+            value={prompt}
+            onChange={(event) => onPromptChange(event.target.value)}
+            disabled={isPending}
+          />
+          {isPending ? (
+            <Button
+              type="button"
+              size="icon"
+              variant="pill"
+              className="size-10 shrink-0 cursor-pointer rounded-full"
+              onClick={onStop}
+              title="Stop generating"
+            >
+              <Square className="size-3.5 fill-current" />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              size="icon"
+              variant="pill"
+              className="size-10 shrink-0 cursor-pointer rounded-full"
+              disabled={!prompt.trim()}
+              title="Send message"
+            >
+              <SendHorizonalIcon className="size-4" />
+            </Button>
+          )}
+        </div>
+      </form>
+    </>
+  );
+}
+
 export default function WorkspaceChatPage() {
   const params = useParams<{ workspaceId: string }>();
   const workspaceId = params?.workspaceId ?? "";
@@ -104,6 +437,8 @@ export default function WorkspaceChatPage() {
   const [prompt, setPrompt] = useState("");
   const [sessionSearch, setSessionSearch] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [mobileSessionsOpen, setMobileSessionsOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const [activeSession, setActiveSession] = useState<{
     sessionId: string | null;
@@ -260,6 +595,7 @@ export default function WorkspaceChatPage() {
       queryClient.invalidateQueries({
         queryKey: ["workspace-sessions", workspaceId],
       });
+      queryClient.invalidateQueries({ queryKey: ["session"] });
       setPrompt("");
     },
     onError: (error, query) => {
@@ -361,13 +697,17 @@ export default function WorkspaceChatPage() {
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    el.scrollTop = el.scrollHeight;
-  }, []);
+    // Keep the latest message in view as the conversation grows, and
+    // re-scroll when the mobile chat Sheet opens.
+    if (displayMessages.length > 0 || mobileSessionsOpen) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [displayMessages.length, mobileSessionsOpen]);
 
   return (
     <div className="flex h-[calc(100dvh-57px)] w-full overflow-hidden">
       {/* SESSIONS SIDEBAR */}
-      <aside className="flex w-72 shrink-0 flex-col gap-4 border-r border-border bg-muted/25 p-4 lg:w-80">
+      <aside className="flex w-full shrink-0 flex-col gap-4 border-b border-border bg-muted/25 p-4 lg:w-80 lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between px-1">
           <h2 className="font-mono text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             {"//sessions"}
@@ -376,7 +716,12 @@ export default function WorkspaceChatPage() {
             type="button"
             variant="ghost"
             size="icon"
-            onClick={handleNewSession}
+            onClick={() => {
+              handleNewSession();
+              if (isMobile) {
+                setMobileSessionsOpen(true);
+              }
+            }}
             className="size-8 cursor-pointer hover:bg-brand/10 hover:text-brand-text"
             title="Start new session"
           >
@@ -384,282 +729,83 @@ export default function WorkspaceChatPage() {
           </Button>
         </div>
 
-        <div className="relative">
-          <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search sessions..."
-            value={sessionSearch}
-            onChange={(e) => setSessionSearch(e.target.value)}
-            className="h-9 rounded-md border-border bg-card pl-8.5 text-sm"
-          />
-        </div>
-
-        <div className="flex-1 space-y-1 overflow-y-auto pr-1">
-          {filteredSessions.map((item) => (
-            <div
-              key={item.id}
-              className={cn(
-                "group flex w-full items-center border transition-all",
-                activeSession.sessionId === item.id
-                  ? "border-brand/40 bg-brand/[0.07]"
-                  : "border-transparent bg-card hover:bg-muted/60",
-              )}
-            >
-              <button
-                type="button"
-                onClick={() => handleSelectSession(item)}
-                className="min-w-0 flex-1 cursor-pointer p-3 text-left"
-              >
-                <p
-                  className={cn(
-                    "truncate font-mono text-xs",
-                    activeSession.sessionId === item.id
-                      ? "font-semibold"
-                      : "font-medium",
-                  )}
-                >
-                  {item.name}
-                </p>
-                <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                  {formatDate(item.created_at)}
-                </p>
-              </button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="mr-1.5 size-7 shrink-0 cursor-pointer text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-                onClick={(e) => handleDeleteSession(item.id, e)}
-                disabled={deleteSessionMutation.isPending}
-                title="Delete session"
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
-            </div>
-          ))}
-
-          {sessionsQuery.isLoading && (
-            <div className="space-y-2">
-              <Skeleton className="h-14 w-full" />
-              <Skeleton className="h-14 w-full" />
-            </div>
-          )}
-
-          {filteredSessions.length === 0 && !sessionsQuery.isLoading && (
-            <p className="py-8 text-center text-xs text-muted-foreground">
-              No sessions found.
-            </p>
-          )}
-        </div>
+        <SessionsPanel
+          sessions={filteredSessions}
+          activeSessionId={activeSession.sessionId}
+          search={sessionSearch}
+          onSearchChange={setSessionSearch}
+          onSelect={(item) => {
+            handleSelectSession(item);
+            if (isMobile) {
+              setMobileSessionsOpen(true);
+            }
+          }}
+          onDelete={handleDeleteSession}
+          isLoading={sessionsQuery.isLoading}
+          isDeleting={deleteSessionMutation.isPending}
+        />
       </aside>
 
-      {/* CHAT MAIN AREA */}
-      <div className="flex h-full min-w-0 flex-1 flex-col">
-        {/* MESSAGES SCROLL AREA */}
-        <div
-          ref={containerRef}
-          className="flex-1 space-y-6 overflow-y-auto px-4 py-6 sm:px-6"
-        >
-          {isLoadingMessages && (
-            <div className="mr-auto max-w-3xl space-y-4">
-              <Skeleton className="h-20 w-3/4" />
-              <Skeleton className="ml-auto h-14 w-2/3" />
-              <Skeleton className="h-28 w-3/4" />
-            </div>
-          )}
-
-          {/* EMPTY CHAT STATE WITH PROMPT STARTERS */}
-          {!isLoadingMessages && displayMessages.length === 0 && (
-            <div className="mx-auto max-w-2xl animate-in fade-in duration-300 py-12">
-              <div className="space-y-3 text-center">
-                <div className="mx-auto flex size-12 items-center justify-center bg-brand/10 font-mono text-sm font-semibold text-brand-text ring-1 ring-brand/20">
-                  {"//ragify"}
-                </div>
-                <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                  Chat with your workspace
-                </h3>
-                <p className="mx-auto max-w-md text-sm leading-relaxed text-muted-foreground">
-                  Ask anything about the documents indexed in this workspace.
-                  Ragify extracts relevant context chunks with precise
-                  citations.
-                </p>
-              </div>
-
-              <div className="mt-8 space-y-3">
-                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                  <Lightbulb className="size-3.5 text-primary" />
-                  Suggested questions
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {PROMPT_STARTERS.map((starter) => (
-                    <DashedPanel key={starter} className="bg-card">
-                      <button
-                        type="button"
-                        onClick={() => handlePromptStarter(starter)}
-                        className="group flex w-full cursor-pointer items-center justify-between gap-3 p-4 text-left text-xs font-medium transition-all hover:bg-muted/30"
-                      >
-                        <span className="leading-relaxed">{starter}</span>
-                        <ChevronRight className="size-3.5 shrink-0 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-brand-text" />
-                      </button>
-                    </DashedPanel>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* CHAT MESSAGES DISPLAY */}
-          {!isLoadingMessages &&
-            displayMessages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  "flex max-w-3xl animate-in fade-in gap-3 duration-200",
-                  message.role === "assistant"
-                    ? "mr-auto"
-                    : "ml-auto flex-row-reverse",
-                )}
-              >
-                {message.role === "assistant" ? (
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand font-mono text-[10px] font-semibold text-brand-foreground">
-                    {"//"}
-                  </div>
-                ) : (
-                  <Avatar className="size-8 shrink-0">
-                    <AvatarImage
-                      src={session?.user.image ?? ""}
-                      alt={session?.user.name ?? "You"}
-                    />
-                    <AvatarFallback className="bg-brand/10 text-xs font-semibold text-brand-text">
-                      {session?.user.name?.charAt(0)?.toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-
-                <div className="min-w-0 max-w-[85%] space-y-1.5">
-                  <div
-                    className={cn(
-                      "border p-4 text-sm leading-relaxed",
-                      message.role === "assistant"
-                        ? "border-border bg-card"
-                        : "border-brand/40 bg-brand font-medium text-brand-foreground",
-                    )}
-                  >
-                    {parseContent(cleanMarkdownContent(message.content)).map(
-                      (part, idx) =>
-                        part.type === "thinking" ? (
-                          <div
-                            // biome-ignore lint/suspicious/noArrayIndexKey: parts are parsed in order and re-rendered together; no stable per-part id exists
-                            key={`thinking-${idx}`}
-                            className="mb-3 border border-border/60 bg-muted/50 p-3"
-                          >
-                            <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                              {"[Thinking]"}
-                            </p>
-                            <div className="text-xs leading-relaxed text-muted-foreground italic">
-                              <ReactMarkdown>{part.content}</ReactMarkdown>
-                            </div>
-                          </div>
-                        ) : (
-                          <div
-                            // biome-ignore lint/suspicious/noArrayIndexKey: parts are parsed in order and re-rendered together; no stable per-part id exists
-                            key={`text-${idx}`}
-                            className="markdown-body break-words"
-                          >
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm, remarkMath]}
-                              rehypePlugins={[rehypeKatex]}
-                            >
-                              {part.content}
-                            </ReactMarkdown>
-                          </div>
-                        ),
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopyMessage(message.content, message.id)
-                    }
-                    className={cn(
-                      "flex cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-                      message.role === "assistant" ? "" : "ml-auto",
-                    )}
-                    title="Copy message"
-                  >
-                    {copiedMessageId === message.id ? (
-                      <Check className="size-3 text-emerald-500" />
-                    ) : (
-                      <Copy className="size-3" />
-                    )}
-                    <span>
-                      {copiedMessageId === message.id ? "Copied" : "Copy"}
-                    </span>
-                  </button>
-                </div>
-              </div>
-            ))}
-
-          {/* STREAMING LOADING INDICATOR */}
-          {queryMutation.isPending && (
-            <div className="mr-auto flex max-w-3xl animate-pulse gap-3">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand font-mono text-[10px] font-semibold text-brand-foreground">
-                {"//"}
-              </div>
-              <div className="flex items-center gap-2 border border-border bg-card p-4 text-xs font-medium text-muted-foreground">
-                <LoaderCircle className="size-3.5 animate-spin text-brand-text" />
-                <span className="font-mono">{"//[Thinking]"}</span>
-                <span>Retrieving context and generating answer...</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* INPUT PROMPT BAR */}
-        <form
-          className="w-full border-t border-border bg-background/95 px-4 py-4 backdrop-blur sm:px-6"
+      {/* DESKTOP CHAT PANE */}
+      <div className="hidden h-full min-w-0 flex-1 flex-col lg:flex">
+        <ChatConversation
+          messages={displayMessages}
+          isLoadingMessages={isLoadingMessages}
+          isPending={queryMutation.isPending}
+          sessionName={activeSession.sessionName}
+          userAvatar={session?.user ?? null}
+          copiedMessageId={copiedMessageId}
+          onCopyMessage={handleCopyMessage}
+          onPromptStarter={handlePromptStarter}
           onSubmit={handleSubmit}
-        >
-          <div className="flex items-center gap-2 border border-border bg-card p-2 transition-all focus-within:border-brand focus-within:ring-[3px] focus-within:ring-brand/20">
-            <Input
-              type="text"
-              className="h-11 border-0 bg-transparent px-3 text-sm shadow-none focus-visible:ring-0"
-              placeholder={
-                activeSession.sessionId
-                  ? "Ask a follow-up question..."
-                  : "Ask a question against your workspace documents..."
-              }
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              disabled={queryMutation.isPending}
-            />
-            {queryMutation.isPending ? (
-              <Button
-                type="button"
-                size="icon"
-                variant="pill"
-                className="size-10 shrink-0 cursor-pointer rounded-full"
-                onClick={handleStop}
-                title="Stop generating"
-              >
-                <Square className="size-3.5 fill-current" />
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                size="icon"
-                variant="pill"
-                className="size-10 shrink-0 cursor-pointer rounded-full"
-                disabled={!prompt.trim()}
-                title="Send message"
-              >
-                <SendHorizonalIcon className="size-4" />
-              </Button>
-            )}
-          </div>
-        </form>
+          onStop={handleStop}
+          prompt={prompt}
+          onPromptChange={setPrompt}
+          scrollRef={containerRef}
+        />
       </div>
+
+      {/* MOBILE CHAT Sheet */}
+      <Sheet open={mobileSessionsOpen} onOpenChange={setMobileSessionsOpen}>
+        <SheetContent
+          side="right"
+          showCloseButton={false}
+          className="w-full! max-w-md gap-0 p-0"
+        >
+          <SheetHeader className="flex-row items-center gap-2 border-b border-border p-4">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="-ml-2 shrink-0 cursor-pointer gap-1.5"
+              onClick={() => setMobileSessionsOpen(false)}
+            >
+              <ArrowLeft className="size-4" />
+            </Button>
+            <SheetTitle className="min-w-0 flex-1 truncate text-center font-mono text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              {activeSession.sessionName ?? "//new chat"}
+            </SheetTitle>
+            <span className="w-12 shrink-0" aria-hidden="true" />
+          </SheetHeader>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <ChatConversation
+              messages={displayMessages}
+              isLoadingMessages={isLoadingMessages}
+              isPending={queryMutation.isPending}
+              sessionName={activeSession.sessionName}
+              userAvatar={session?.user ?? null}
+              copiedMessageId={copiedMessageId}
+              onCopyMessage={handleCopyMessage}
+              onPromptStarter={handlePromptStarter}
+              onSubmit={handleSubmit}
+              onStop={handleStop}
+              prompt={prompt}
+              onPromptChange={setPrompt}
+              scrollRef={containerRef}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

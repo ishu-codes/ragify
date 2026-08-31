@@ -2,6 +2,7 @@ export type User = {
   id: string;
   name: string;
   email: string;
+  credit_balance?: number;
   image?: string;
   role?: string;
 };
@@ -16,9 +17,8 @@ export type AuthResponse = {
   access_token: string;
 };
 
-export type SessionResponse = {
-  user: User;
-};
+// /auth/session returns the flat user object (id, name, email, credit_balance).
+export type SessionResponse = User;
 
 export type Workspace = {
   id: string;

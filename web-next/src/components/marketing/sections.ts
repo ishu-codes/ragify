@@ -108,6 +108,7 @@ export const PRICING = [
     features: [
       "Up to 3 workspaces",
       "50 MB total document storage",
+      "20 chat credits / month",
       "Standard neural search",
       "Local browser chat persistence",
     ],

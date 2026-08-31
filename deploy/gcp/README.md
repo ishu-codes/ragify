@@ -139,6 +139,14 @@ Cloud SQL instance and the four services (or the whole project).
 - Cloud Run caps request bodies at 32 MiB — keep uploaded documents under that.
 - First query after idle cold-starts the rag service (~20–60 s incl. loading
   the baked-in Ollama embedding model); warm queries are fast.
+- Free-tier quotas and rate limits run inside the API (PostgreSQL-backed, no
+  extra infra). Defaults: 50 credits/month, 1 credit per chat query, 1 credit
+  per 5 MiB uploaded, max 3 workspaces, 50 MiB storage, and the register/login/
+  query/upload buckets from `api-python/src/quotas/config.py`. Tune without a
+  redeploy via env vars: `FREE_MONTHLY_CREDITS`, `QUERY_CREDIT_COST`,
+  `UPLOAD_CREDIT_STRIDE_BYTES`, `MAX_WORKSPACES`, `MAX_STORAGE_BYTES`, and
+  `RATE_LIMIT_*` (see `deploy/gcp/deploy.sh` env pattern; pass them to
+  `gcloud run deploy ragify-api --set-env-vars ...`).
 - The rag image intentionally excludes torch/transformers (reranker only, not
   in the served graph), which keeps the image ~1–2 GB smaller and cold starts
   faster.

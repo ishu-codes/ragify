@@ -35,10 +35,10 @@ export function useSession() {
   const session: AuthSession | null =
     !hasHydrated || !storedSession?.user
       ? null
-      : storedSession && query.data?.user
+      : storedSession && query.data
         ? {
             accessToken: storedSession.accessToken,
-            user: query.data.user,
+            user: query.data,
           }
         : storedSession;
 

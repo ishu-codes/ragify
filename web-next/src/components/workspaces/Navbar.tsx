@@ -7,6 +7,7 @@ import Logo from "@/components/Logo";
 import { ThemeToggle } from "@/components/navbar/ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { CreditsBadge } from "@/components/CreditsBadge";
 import {
   Popover,
   PopoverContent,
@@ -42,6 +43,7 @@ export default function Navbar({ children }: { children?: ReactNode }) {
       {children ? children : <Logo />}
 
       <div className="flex items-center gap-3">
+        {session && <CreditsBadge credits={session.user.credit_balance} />}
         <ThemeToggle />
         {session && (
           <Popover>
