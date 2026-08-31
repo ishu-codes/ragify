@@ -4,6 +4,7 @@
 	help \
 	infra-up infra-down \
 	ragify-server grpc-gen \
+	test-api-python \
 
 
 # ── Help ─────────────────────────────────────────────────────────────────────
@@ -33,13 +34,17 @@ infra-down:
 ragify-server:
 	cd rag && .venv/bin/python -m src.grpc
 
+
 grpc-gen:
 	cd rag && bash scripts/gen_ragify_grpc.sh
 
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 
+# ── Test ─────────────────────────────────────────────────────────────────────
 
+test-api-python:
+	cd api-python && .venv/bin/python -m pytest tests -v
 
 
 # ── Keys ─────────────────────────────────────────────────────────────────────
