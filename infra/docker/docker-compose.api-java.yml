@@ -1,0 +1,77 @@
+# Standalone stack for testing api-java only.
+# Contains exactly its requirements: PostgreSQL + PgBouncer + api-java.
+#   docker compose -f docker-compose.api-java.yml --env-file=../../.env up -d --build
+# Or from the repo root: make api-java-up
+name: ragify-api-java
+
+services:
+  db:
+    container_name: ragify-api-java-db
+    image: postgres:16.10-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ragify}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ragify}
+      POSTGRES_DB: ${POSTGRES_DB:-ragify}
+    volumes:
+      - api_java_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ragify} -d ${POSTGRES_DB:-ragify}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  pgbouncer:
+    container_name: ragify-pgbouncer
+    image: edoburu/pgbouncer:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-ragify}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-ragify}
+      DB_NAME: ${POSTGRES_DB:-ragify}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 500
+      DEFAULT_POOL_SIZE: 50
+      AUTH_TYPE: scram-sha-256
+    volumes:
+      - ../configs/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+      - ../configs/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+    restart: unless-stopped
+
+  api-java:
+    container_name: ragify-api-java
+    build:
+      context: ../../api-java
+      dockerfile: Dockerfile
+    environment:
+      PORT: 8000
+      # api-java always reaches Postgres through PgBouncer inside this network.
+      DB_URL: jdbc:postgresql://pgbouncer:5432/${POSTGRES_DB:-ragify}
+      DB_USER: ${POSTGRES_USER:-ragify}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-ragify}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-code}
+      JWT_EXPIRES_MINUTES: ${JWT_EXPIRES_MINUTES:-180}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      STORAGE_PATH: storage/workspaces
+      # rag gRPC server is not part of this stack; reach one on the host if needed.
+      RAGIFY_GRPC_ENDPOINT: ${RAGIFY_GRPC_ENDPOINT:-host.docker.internal:50051}
+    ports:
+      - "${API_JAVA_PORT:-8000}:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../../api-java/storage:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_started
+    # PgBouncer has no healthcheck, so retry until the pooler accepts connections.
+    restart: unless-stopped
+
+volumes:
+  api_java_db_data:

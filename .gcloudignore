@@ -1,0 +1,75 @@
+# Git
+.git/
+.gitignore
+
+# Node
+**/node_modules/
+**/dist/
+**/.next/
+**/.angular
+
+# Python
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.venv/
+**/venv/
+
+# Java
+**/build/
+**/bin/
+**/.gradle/
+
+
+# Rag
+rag/source
+rag/benchmark
+
+# Local storage / databases
+infra/volumes/
+**/storage/
+
+# Local logs
+**/*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Environment/secrets
+.env
+.env.*
+!.env.example
+
+# Documentation/assets not needed for builds
+docs/
+*.ipynb
+
+# Unnecessary files
+.commandcode/
+.ruff_cache/
+.zed/
+run.sh
+ToDo.md
+
+
+# Backend
+api-csharp/
+api-java
+
+
+# Frontend
+web-angular/
+web-react/
+
+
+# Infra
+infra/
+
+# Deploy
+deploy/
