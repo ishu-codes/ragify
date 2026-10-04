@@ -44,7 +44,7 @@ images:
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/rag:${_TAG}
 
 substitutions:
-  _REGION: us-central1
+  _REGION: asia-south1
   _REPO: ragify
   _TAG: latest
   _API_URL: http://localhost:8000

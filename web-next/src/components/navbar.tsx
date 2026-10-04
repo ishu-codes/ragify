@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  ShieldCheck,
-  XIcon,
-} from "lucide-react";
+import { LayoutDashboard, LogOut, Menu, ShieldCheck, XIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Pill } from "@/components/marketing/Pill";
@@ -16,20 +10,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CreditsBadge } from "@/components/CreditsBadge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import Logout from "@/components/workspaces/Logout";
 import { useSession } from "@/hooks/useAuthSession";
 
 const NAV_LINKS = [
-  { label: "Docs", href: "#" },
+  { label: "Demo", href: "/#demo" },
   { label: "Features", href: "/#features" },
   { label: "Pricing", href: "/#pricing" },
-  { label: "Demo", href: "/#demo" },
-  { label: "Blog", href: "#" },
+  { label: "Changelog", href: "/#changelog" },
+  { label: "FAQ", href: "/#faq" },
 ];
 
 export function Navbar() {
@@ -73,19 +63,14 @@ export function Navbar() {
               <PopoverContent className="w-72 border p-3" align="end">
                 <div className="flex items-center gap-3 px-2 py-2">
                   <Avatar className="size-9">
-                    <AvatarImage
-                      src={session?.user.image ?? ""}
-                      alt="profile"
-                    />
+                    <AvatarImage src={session?.user.image ?? ""} alt="profile" />
                     <AvatarFallback className="bg-brand/10 text-xs font-semibold text-brand-text">
                       {session?.user.name?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-semibold leading-none">
-                        {session?.user.name}
-                      </p>
+                      <p className="truncate text-sm font-semibold leading-none">{session?.user.name}</p>
                       {session?.user.role === "ADMIN" && (
                         <Badge
                           variant="default"
@@ -95,32 +80,21 @@ export function Navbar() {
                         </Badge>
                       )}
                     </div>
-                    <p className="mt-1 truncate text-xs text-muted-foreground">
-                      {session?.user.email}
-                    </p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{session?.user.email}</p>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="h-9 w-full justify-start gap-2 text-xs font-medium"
-                  >
+                  <Button asChild variant="outline" className="h-9 w-full justify-start gap-2 text-xs font-medium">
                     <Link href="/workspaces">
                       <LayoutDashboard className="size-3.5" /> Go to workspaces
                     </Link>
                   </Button>
 
                   {session?.user.role === "ADMIN" && (
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="h-9 w-full justify-start gap-2 text-xs font-medium"
-                    >
+                    <Button asChild variant="outline" className="h-9 w-full justify-start gap-2 text-xs font-medium">
                       <Link href="/admin">
-                        <ShieldCheck className="size-3.5 text-brand-text" />{" "}
-                        Admin panel
+                        <ShieldCheck className="size-3.5 text-brand-text" /> Admin panel
                       </Link>
                     </Button>
                   )}
@@ -148,11 +122,7 @@ export function Navbar() {
           aria-label="Toggle navigation"
           aria-expanded={isMenuOpen}
         >
-          {isMenuOpen ? (
-            <XIcon className="size-5" />
-          ) : (
-            <Menu className="size-5" />
-          )}
+          {isMenuOpen ? <XIcon className="size-5" /> : <Menu className="size-5" />}
         </button>
       </div>
 
@@ -174,40 +144,25 @@ export function Navbar() {
           <div className="mt-4 space-y-2 border-t border-border pt-4">
             {session ? (
               <>
-                <Button
-                  asChild
-                  className="w-full justify-start gap-2 text-sm font-medium"
-                >
+                <Button asChild className="w-full justify-start gap-2 text-sm font-medium">
                   <Link href="/workspaces" onClick={() => setIsMenuOpen(false)}>
                     <LayoutDashboard className="size-4" /> Go to workspaces
                   </Link>
                 </Button>
                 {session?.user.role === "ADMIN" && (
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="w-full justify-start gap-2 text-sm font-medium"
-                  >
+                  <Button asChild variant="outline" className="w-full justify-start gap-2 text-sm font-medium">
                     <Link href="/admin" onClick={() => setIsMenuOpen(false)}>
-                      <ShieldCheck className="size-4 text-brand-text" /> Admin
-                      panel
+                      <ShieldCheck className="size-4 text-brand-text" /> Admin panel
                     </Link>
                   </Button>
                 )}
-                <Logout
-                  className="w-full justify-start gap-2 text-sm font-medium"
-                  variant="outline"
-                >
+                <Logout className="w-full justify-start gap-2 text-sm font-medium" variant="outline">
                   <LogOut className="size-4" /> Log out
                 </Logout>
               </>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                <Button
-                  asChild
-                  variant="outline"
-                  className="text-sm font-medium"
-                >
+                <Button asChild variant="outline" className="text-sm font-medium">
                   <Link href="/sign-in" onClick={() => setIsMenuOpen(false)}>
                     Sign in
                   </Link>

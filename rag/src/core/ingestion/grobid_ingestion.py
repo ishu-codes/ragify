@@ -7,47 +7,45 @@ from pathlib import Path
 from typing import Any
 
 from grobid2json import convert_xml_to_json
-from grobid_client.grobid_client import GrobidClient
 from langchain_core.documents import Document
-from ollama import ResponseError
 
 from src.core.ingestion.chunk_processor import process_section
 from src.core.retrieval import vector_store_manager
-from src.core.utils.config import ARTIFACTS_ROOT
+from src.core.retrieval.embedder import EmbeddingError, configure_embedder_threads
+from src.core.utils.config import ARTIFACTS_ROOT, INGEST_WORKERS
 from src.core.utils.logger import get_logger
 from src.core.utils.text_quality import is_degenerate
 from src.utils.files import get_file_content
 from src.utils.json import load_json_file, save_to_json
 from src.utils.threads import run_in_threads
 
+from .auth import build_grobid_client
+
 logger = get_logger("ragify.grobid")
 
 
 class GrobidIngestor:
-    def __init__(self, collection_name: str, input_dir: str, output_dir: str|None = None) -> None:
+    def __init__(
+        self, collection_name: str, input_dir: str, output_dir: str | None = None
+    ) -> None:
         self._collection_name = collection_name
         # _input_dir for pdf
         self._input_dir = input_dir
 
         # _output_dir for xml and json
         self._output_dir = input_dir if output_dir is None else output_dir
-        self._grobid_client = GrobidClient(
-            grobid_server=getenv("GROBID_URL", "http://localhost:8070"),
-            # Don't ping on init: on Cloud Run the Grobid instance may still
-            # be cold-starting when this client is constructed.
-            check_server=False,
+        self._grobid_client = build_grobid_client(
+            getenv("GROBID_URL", "http://localhost:8070")
         )
         # Persisted artifacts (pdf / xml / json / chunks) for debugging, under
         # source/workspace/{workspace_id} in the rag directory.
         self._artifacts_root = Path(ARTIFACTS_ROOT) / str(collection_name)
-
 
     def ingest(self):
         self._convert_pdf_to_xml()  # using grobid
         self._convert_xml_to_json()  # using grobid2json
         self._persist_artifacts()  # keep pdf/xml/json for inspection
         self._ingest_json_files()  # into qdrant vector db
-
 
     # File conversions
     def _convert_pdf_to_xml(self) -> None:
@@ -63,21 +61,18 @@ class GrobidIngestor:
 
     def _convert_xml_to_json(self) -> None:
         xmls = Path(self._output_dir).glob("*.grobid.tei.xml")
-        run_in_threads(
-            self._load_xml_and_save_to_json,
-            xmls
-        )
+        run_in_threads(self._load_xml_and_save_to_json, xmls)
 
     def _load_xml_and_save_to_json(self, file_path: str) -> None:
         from bs4 import BeautifulSoup
 
         paper_id = ".".join(Path(file_path).stem.split(".")[:2])
-        xml_data = get_file_content(file_path) or ''
+        xml_data = get_file_content(file_path) or ""
         soup = BeautifulSoup(xml_data, "xml")
 
         self._sanitize_figures_for_grobid2json(soup)
         json_content = convert_xml_to_json(soup, paper_id, "")
-        save_to_json(f'{self._output_dir}/{paper_id}.json', json_content.as_json())
+        save_to_json(f"{self._output_dir}/{paper_id}.json", json_content.as_json())
 
     def _persist_artifacts(self) -> None:
         """Copy PDF, XML and JSON artifacts into source/workspace/{workspace_id}."""
@@ -128,12 +123,18 @@ class GrobidIngestor:
             )
         return kept
 
-    def _save_chunks(self, paper_id: str, docs: list[Document], point_ids: list[str]) -> None:
+    def _save_chunks(
+        self, paper_id: str, docs: list[Document], point_ids: list[str]
+    ) -> None:
         """Write the indexed chunks (with vector point ids) to a JSONL file."""
         if len(point_ids) != len(docs):
             logger.warning(
                 "chunk_point_id_mismatch",
-                extra={"paper_id": paper_id, "docs": len(docs), "points": len(point_ids)},
+                extra={
+                    "paper_id": paper_id,
+                    "docs": len(docs),
+                    "points": len(point_ids),
+                },
             )
 
         chunks_dir = self._artifacts_root / "chunks"
@@ -182,14 +183,43 @@ class GrobidIngestor:
     # File ingestion
     def _ingest_json_files(self) -> None:
         json_files_path = Path(self._output_dir).glob("*.json")
-        run_in_threads(
-            self._load_paper_and_ingest,
-            json_files_path
-        )
+        run_in_threads(self._load_paper_and_ingest, json_files_path)
 
     def _load_paper_and_ingest(self, file_path: str) -> None:
         json_content = load_json_file(file_path)
         self._ingest_paper_from_json(json_content)
+
+    def _chunk_sections(
+        self,
+        units: list[tuple[str, list[str]]],
+        paper_id: str,
+    ) -> list[tuple[str, str, list[str]]]:
+        """Chunk every section, in parallel, preserving section order.
+
+        ``process_section`` embeds a section's sentences to find semantic
+        boundaries, which dominates ingest time. Sections are independent of one
+        another, so they are chunked concurrently; ``ThreadPoolExecutor.map``
+        preserves the input order of the results.
+        """
+        if not units:
+            return []
+
+        def chunk_unit(unit: tuple[str, list[str]]) -> tuple[str, str, list[str]]:
+            sec_name, paras = unit
+            chunks = self._filter_chunks(process_section(paras), paper_id, sec_name)
+            return sec_name, " ".join(paras), chunks
+
+        from src.utils.threads import run_in_threads
+
+        workers = min(INGEST_WORKERS, len(units))
+        configure_embedder_threads(workers)
+        return run_in_threads(chunk_unit, units, workers)
+
+        # if workers <= 1:
+        #     return [chunk_unit(unit) for unit in units]
+
+        # with ThreadPoolExecutor(max_workers=workers) as pool:
+        #     return list(pool.map(chunk_unit, units))
 
     def _ingest_paper_from_json(self, paper: dict[str, Any]) -> dict[str, str]:
         docs = []
@@ -209,30 +239,6 @@ class GrobidIngestor:
         abstract_texts = [a.get("text", "") for a in abstract if isinstance(a, dict)]
         abstract_text = " ".join([t for t in abstract_texts if t])
 
-        if abstract_text:
-            parent_id = f"{paper_id}_abstract"
-            parent_store[parent_id] = abstract_text
-
-            chunks = self._filter_chunks(
-                process_section([abstract_text]), paper_id, "abstract"
-            )
-            docs.extend([
-                Document(
-                    page_content=chunk,
-                    metadata={
-                        "id": str(uuid.uuid4()),
-                        "paper_id": paper_id,
-                        "title": title,
-                        "section": "abstract",
-                        "parent_id": parent_id,
-                        "abstract_index": i,
-                        "level": "child",
-                    },
-                )
-                for (i, chunk) in enumerate(chunks)
-            ])
-
-
         sections = defaultdict(list)
 
         for para in body_text:
@@ -245,27 +251,33 @@ class GrobidIngestor:
                 continue
             sections[para.get("section", "back_matter")].append(para.get("text", ""))
 
-        for sec_name, paras in sections.items():
-            parent_id = f"{paper_id}_{sec_name}"
-            full_text = " ".join(paras)
-            parent_store[parent_id] = full_text
+        units: list[tuple[str, list[str]]] = []
+        if abstract_text:
+            units.append(("abstract", [abstract_text]))
+        units.extend(sections.items())
 
-            chunks = self._filter_chunks(process_section(paras), paper_id, sec_name)
-            docs.extend([
-                Document(
-                    page_content=chunk,
-                    metadata={
-                        "id": str(uuid.uuid4()),
-                        "paper_id": paper_id,
-                        "title": title,
-                        "section": sec_name,
-                        "parent_id": parent_id,
-                        "chunk_index": i,
-                        "level": "child",
-                    },
-                )
-                for (i, chunk) in enumerate(chunks)
-            ])
+        for sec_name, full_text, chunks in self._chunk_sections(units, paper_id):
+            parent_id = f"{paper_id}_{sec_name}"
+            parent_store[parent_id] = full_text
+            # The abstract keeps its original metadata key for compatibility.
+            index_key = "abstract_index" if sec_name == "abstract" else "chunk_index"
+            docs.extend(
+                [
+                    Document(
+                        page_content=chunk,
+                        metadata={
+                            "id": str(uuid.uuid4()),
+                            "paper_id": paper_id,
+                            "title": title,
+                            "section": sec_name,
+                            "parent_id": parent_id,
+                            index_key: i,
+                            "level": "child",
+                        },
+                    )
+                    for (i, chunk) in enumerate(chunks)
+                ]
+            )
 
         try:
             if docs:
@@ -274,7 +286,9 @@ class GrobidIngestor:
                 )
                 self._save_chunks(paper_id, docs, point_ids)
 
-        except ResponseError as err:
-            logger.exception("ingest_failed", extra={"paper_id": paper_id, "error": str(err)})
+        except EmbeddingError as err:
+            logger.exception(
+                "ingest_failed", extra={"paper_id": paper_id, "error": str(err)}
+            )
 
         return parent_store

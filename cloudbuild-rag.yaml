@@ -1,0 +1,17 @@
+steps:
+  - id: build-rag
+    name: gcr.io/cloud-builders/docker
+    dir: rag
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/rag:${_TAG}
+      - .
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/rag:${_TAG}
+
+substitutions:
+  _REGION: asia-south1
+  _REPO: ragify
+  _TAG: latest

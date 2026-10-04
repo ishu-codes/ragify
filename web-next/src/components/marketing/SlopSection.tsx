@@ -6,7 +6,7 @@ import { SLOP_COPY } from "./sections";
 
 export function SlopSection() {
   return (
-    <Section className="bg-muted/20">
+    <Section id="why" className="bg-muted/20">
       <SectionHeader
         heading={SLOP_COPY.heading}
         className="mx-auto text-center"

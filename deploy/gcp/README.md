@@ -10,8 +10,8 @@ Cloud SQL). Everything else stays inside free tiers.
 |---|---|---|
 | web-next (Next.js standalone) | `ragify-web` | public HTTPS |
 | api-python (FastAPI) | `ragify-api` | public HTTPS |
-| rag (gRPC + bundled Ollama) | `ragify-rag` | internal, gRPC/HTTP2 |
-| Grobid (PDF parsing) | `ragify-grobid` | internal HTTP |
+| rag (gRPC, in-process embeddings) | `ragify-rag` | gRPC/HTTP2, unauthenticated |
+| Grobid (PDF parsing) | `ragify-grobid` | HTTP, unauthenticated |
 | PostgreSQL | Cloud SQL `db-f1-micro` | proxy-only (via sidecar) |
 | Qdrant | Qdrant Cloud free tier | external HTTPS |
 
@@ -151,5 +151,15 @@ Cloud SQL instance and the four services (or the whole project).
   in the served graph), which keeps the image ~1–2 GB smaller and cold starts
   faster.
 - gRPC between api and rag uses TLS (`RAGIFY_GRPC_TLS=true`) against the
-  internal `*.run.app` endpoint; no extra networking or VPC needed.
+  `*.run.app` endpoint; no extra networking or VPC needed.
+- `ragify-rag` and `ragify-grobid` are deployed with `--ingress all`, not
+  `internal`. A call from one Cloud Run service to another is treated as coming
+  from outside the project's VPC, so `internal` makes the frontend return
+  HTTP 404 to the API's gRPC/HTTP calls before they reach the container.
+- Access to those two services is gated by ID token instead:
+  `./run.sh lock-down` removes the `allUsers` invoker binding and grants
+  `roles/run.invoker` to the calling service account. `api-python` attaches a
+  token (audience = rag service URL) to every gRPC call, and `rag` does the
+  same for its HTTP calls to Grobid. Run `lock-down` only after both images
+  that mint tokens are deployed.
 - Custom domains: attach via `gcloud run domain-mappings create` if desired.

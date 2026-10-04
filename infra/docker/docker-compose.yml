@@ -1,4 +1,27 @@
 services:
+  rag:
+    container_name: ragify-rag
+    build:
+      context: ../../rag
+      dockerfile: Dockerfile
+    env_file:
+      - ../../.env
+    ports:
+      - "50051:50051"
+    environment:
+      RAGIFY_GRPC_HOST: ${RAGIFY_GRPC_HOST:-0.0.0.0}
+      RAGIFY_GRPC_PORT: ${RAGIFY_GRPC_PORT:-50051}
+      RAGIFY_GRPC_ENDPOINT: ${RAGIFY_GRPC_ENDPOINT:-localhost:50051}
+      VECTORDB_URL: ${VECTORDB_URL:-http://vector_db:6333}
+      # The in-code default is localhost:8070, which inside this container is the
+      # rag container itself.
+      GROBID_URL: ${GROBID_URL:-http://grobid:8070}
+
+    networks:
+      - rag_network
+    depends_on:
+      - vector_db
+
   # api:
   #   container_name: ragify-api
   #   build: ./api/Dockerfile
@@ -21,6 +44,8 @@ services:
   #     - VITE_API_URL=http://localhost:1337
   #   restart: unless-stopped
 
+  # ===================== Databases ====================
+
   db:
     container_name: ragify-db
     image: postgres:16.10-alpine
@@ -42,7 +67,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-
     restart: unless-stopped
 
   vector_db:
@@ -57,7 +81,12 @@ services:
       - ../volumes/qdrant:/qdrant/storage
       - ../configs/qdrant.yaml:/qdrant/config/config.yaml
 
+    networks:
+      - rag_network
+
     command: ["./qdrant", "--config-path", "/qdrant/config/config.yaml"]
+
+  # ===================== Other Services ====================
 
   grobid:
     container_name: ragify-grobid
@@ -70,6 +99,80 @@ services:
         hard: 0
     init: true
     restart: unless-stopped
+    # rag reaches Grobid by service name, so they have to share a network.
+    networks:
+      - rag_network
+
+  pgbouncer:
+    container_name: ragify-pgbouncer
+    image: edoburu/pgbouncer:latest
+    ports:
+      - "6432:5432"
+    # env_file:
+    #   - ../../.env
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ragify
+      DB_PASSWORD: ragify
+      DB_NAME: ragify
+      # DB_USER: ${POSTGRES_USER:-ragify}
+      # DB_PASSWORD: ${POSTGRES_PASSWORD:-ragify}
+      # DB_NAME: ${POSTGRES_DB:-ragify}
+      # DB_HOST: db
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 500
+      DEFAULT_POOL_SIZE: 50
+      AUTH_TYPE: scram-sha-256
+
+    volumes:
+      - ../configs/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+      - ../configs/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+
+  # ===================== Metrics & Observability ====================
+
+  prometheus:
+    container_name: ragify-prometheus
+    image: prom/prometheus:v3.5.0
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    restart: unless-stopped
+
+  grafana:
+    container_name: ragify-grafana
+    image: grafana/grafana:12.1.1
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  jaeger:
+    container_name: ragify-jaeger
+    image: jaegertracing/jaeger:2.20.0
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
 
 volumes:
-  data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  rag_network:

@@ -5,7 +5,7 @@ import { VALUE_PROPS, VALUE_STACK_COPY } from "./sections";
 
 export function ValueStack() {
   return (
-    <Section className="bg-background">
+    <Section id="stats" className="bg-background">
       <SectionHeader heading={VALUE_STACK_COPY.heading} />
 
       <div className="mt-14 grid gap-6 sm:grid-cols-3">

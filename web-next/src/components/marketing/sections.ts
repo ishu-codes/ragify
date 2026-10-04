@@ -6,11 +6,11 @@ export type ChangelogEntry = {
 };
 
 export const ANNOUNCEMENT_STRIP = {
-  left: "Ragify is in private beta — request access.",
+  left: "Ragify is in private beta, request access.",
   right: [
     { label: "Citations per answer", value: "5–10" },
     { label: "Hybrid retrieval", value: "BM25 + dense" },
-    { label: "Local-first chat", value: "browser-persisted" },
+    // { label: "Local-first chat", value: "browser-persisted" },
   ],
 };
 
@@ -20,8 +20,8 @@ export const HERO_COPY = {
   headline2: "not hallucinations.",
   subhead:
     "Upload PDFs, Markdown, code, and JSON into isolated workspaces. Ragify retrieves the right context and answers with exact source citations.",
-  primary: { label: "npm i @ragify/cli", to: "/sign-up" },
-  secondary: { label: "Read the docs", href: "#features" },
+  primary: { label: "Get Started", to: "/sign-up" },
+  secondary: { label: "Learn more", href: "#features" },
 };
 
 export const FRONTIER_COPY = {
@@ -48,22 +48,19 @@ export const SLOP_COPY = {
 
 export const EXPLAINER_COPY = {
   heading: "Hello, Ragify.",
-  subhead:
-    "The retrieval engine that grounds every LLM answer in your workspace.",
+  subhead: "The retrieval engine that grounds every LLM answer in your workspace.",
   items: [
     {
       num: "01",
       title: "Isolated workspaces",
       command: "npx ragify workspace create",
-      description:
-        "Partition documents into dedicated namespaces with their own index and metadata.",
+      description: "Partition documents into dedicated namespaces with their own index and metadata.",
     },
     {
       num: "02",
       title: "Multi-format ingestion",
       command: "ragify upload docs/",
-      description:
-        "PDFs, Markdown, TypeScript, Python, JSON, CSV — chunked and embedded automatically.",
+      description: "PDFs, Markdown, TypeScript, Python, JSON, CSV — chunked and embedded automatically.",
     },
     {
       num: "03",
@@ -81,8 +78,7 @@ export const EXPLAINER_COPY = {
       num: "05",
       title: "Streaming chat, local-first",
       command: "ragify chat",
-      description:
-        "Sessions persist in your browser. Cancel mid-stream with one click.",
+      description: "Sessions persist in your browser. Cancel mid-stream with one click.",
     },
     {
       num: "06",
@@ -150,8 +146,7 @@ export const PRICING = [
 
 export const PRICING_COPY = {
   heading: "Plans for every team.",
-  subhead:
-    "Start free. Upgrade when your team needs more. Every plan includes grounded citations.",
+  subhead: "Start free. Upgrade when your team needs more. Every plan includes grounded citations.",
 };
 
 export const VALUE_PROPS = [
@@ -233,15 +228,13 @@ export const LATEST_FEED_COPY = {
 
 export const SECONDARY_CTA = {
   heading: "Ready to ground your answers?",
-  subhead:
-    "Start your first workspace in under a minute. No credit card required.",
+  subhead: "Start your first workspace in under a minute. No credit card required.",
   primary: { label: "Get started", to: "/sign-up" },
   secondary: { label: "Sign in", to: "/sign-in" },
 };
 
 export const FOOTER_COPY = {
-  tagline:
-    "Grounded AI answers for your documents, code, and data. Every response cites its source.",
+  tagline: "Grounded AI answers for your documents, code, and data. Every response cites its source.",
 };
 
 export const FOOTER_COLUMNS = [
@@ -252,7 +245,7 @@ export const FOOTER_COLUMNS = [
       { label: "Features", href: "/#features" },
       { label: "Pricing", href: "/#pricing" },
       { label: "Changelog", href: "/#changelog" },
-      { label: "Status", href: "#" },
+      { label: "FAQ", href: "/#faq" },
     ],
   },
   {

@@ -7,7 +7,7 @@ name: ragify-api-java
 services:
   db:
     container_name: ragify-api-java-db
-    image: postgres:16.10-alpine
+    image: docker.io/library/postgres:16.10-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ragify}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ragify}
@@ -23,7 +23,7 @@ services:
 
   pgbouncer:
     container_name: ragify-pgbouncer
-    image: edoburu/pgbouncer:latest
+    image: docker.io/edoburu/pgbouncer:latest
     depends_on:
       db:
         condition: service_healthy

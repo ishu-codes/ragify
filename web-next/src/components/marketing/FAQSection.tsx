@@ -12,11 +12,8 @@ export function FAQSection() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <Section className="bg-muted/20">
-      <SectionHeader
-        heading={FAQ_COPY.heading}
-        className="mx-auto text-center"
-      />
+    <Section id="faq" className="bg-muted/20">
+      <SectionHeader heading={FAQ_COPY.heading} className="mx-auto text-center" />
 
       <div className="mx-auto mt-14 max-w-3xl space-y-3">
         {FAQ_ITEMS.map((faq, index) => (

@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ragify — Grounded answers from your documents",
+  title: "Ragify | Grounded answers from your documents",
   description:
     "Upload PDFs, Markdown, code, and JSON into isolated workspaces. Ragify retrieves the right context and answers with exact source citations.",
   icons: {
@@ -26,11 +26,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable}`}
-    >
+    <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         <Providers>{children}</Providers>
       </body>

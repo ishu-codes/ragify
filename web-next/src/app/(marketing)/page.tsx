@@ -17,8 +17,8 @@ export default function LandingPage() {
       <RagifyExplainer />
       <PlansPricing />
       <ValueStack />
-      <FAQSection />
       <LatestFeed />
+      <FAQSection />
       <SecondaryCTA />
     </>
   );

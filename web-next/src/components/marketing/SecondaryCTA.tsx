@@ -9,7 +9,7 @@ import { SECONDARY_CTA } from "./sections";
 
 export function SecondaryCTA() {
   return (
-    <Section className="bg-muted/20">
+    <Section id="get-started" className="bg-muted/20">
       <Reveal>
         <DashedPanel className="relative overflow-hidden bg-card px-6 py-16 text-center sm:px-12 lg:py-24">
           <NoiseOverlay />

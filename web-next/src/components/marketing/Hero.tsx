@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowRightIcon } from "lucide-react";
 import { NoiseOverlay } from "./NoiseOverlay";
 import { OutlinePill, Pill } from "./Pill";
 import { Reveal } from "./Reveal";
@@ -7,7 +8,7 @@ import { ANNOUNCEMENT_STRIP, HERO_COPY } from "./sections";
 
 export function Hero() {
   return (
-    <section className="relative mt-[84px] border border-border border-b-0 bg-background">
+    <section id="home" className="relative mt-[84px] scroll-mt-[85px] border border-border border-b-0 bg-background">
       <NoiseOverlay />
 
       {/* Announcement strip */}
@@ -25,9 +26,7 @@ export function Hero() {
           {ANNOUNCEMENT_STRIP.right.map((item) => (
             <span key={item.label} className="whitespace-nowrap">
               <span className="text-muted-foreground">{item.label}</span>{" "}
-              <span className="font-mono font-semibold tabular-nums text-foreground">
-                {item.value}
-              </span>
+              <span className="font-mono font-semibold tabular-nums text-foreground">{item.value}</span>
             </span>
           ))}
         </div>
@@ -50,9 +49,7 @@ export function Hero() {
 
         <Reveal direction="up">
           <div className="mx-auto max-w-4xl text-center">
-            <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-              {HERO_COPY.kicker}
-            </p>
+            <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">{HERO_COPY.kicker}</p>
             <h1 className="mt-4 text-4xl font-semibold tracking-tighter text-balance sm:text-5xl lg:text-7xl">
               {HERO_COPY.headline1}
               <br />
@@ -63,23 +60,9 @@ export function Hero() {
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Pill asLink to={HERO_COPY.primary.to}>
-                <span className="font-mono text-sm sm:text-base">
-                  {HERO_COPY.primary.label}
-                </span>
-                <svg
-                  className="size-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M8 8V4h12v12h-4M16 8v12H4V8h12z"
-                    strokeLinecap="round"
-                  />
-                </svg>
+              <Pill asLink to={HERO_COPY.primary.to} className="group">
+                <span className="font-mono text-sm sm:text-base">{HERO_COPY.primary.label}</span>
+                <ArrowRightIcon className="transition-transform duration-300 ease-out motion-safe:group-hover:translate-x-1" />
               </Pill>
               <OutlinePill asLink href={HERO_COPY.secondary.href}>
                 {HERO_COPY.secondary.label}
