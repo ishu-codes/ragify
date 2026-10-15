@@ -10,3 +10,12 @@
 [submodule "api-python"]
 	path = api-python
 	url = https://github.com/ishu-codes/ragify-api-python
+[submodule "web-angular"]
+	path = web-angular
+	url = https://github.com/ishu-codes/ragify-web-angular
+[submodule "web-next"]
+	path = web-next
+	url = https://github.com/ishu-codes/ragify-web-next
+[submodule "web-react"]
+	path = web-react
+	url = https://github.com/ishu-codes/ragify-web-react
