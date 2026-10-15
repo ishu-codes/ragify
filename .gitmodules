@@ -4,3 +4,6 @@
 [submodule "api-csharp"]
 	path = api-csharp
 	url = https://github.com/ishu-codes/ragify-api-csharp
+[submodule "api-javascript"]
+	path = api-javascript
+	url = https://github.com/ishu-codes/ragify-api-javascript
