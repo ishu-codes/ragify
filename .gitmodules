@@ -19,3 +19,6 @@
 [submodule "web-react"]
 	path = web-react
 	url = https://github.com/ishu-codes/ragify-web-react
+[submodule "rag"]
+	path = rag
+	url = https://github.com/ishu-codes/ragify-rag
