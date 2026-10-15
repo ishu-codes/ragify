@@ -7,3 +7,6 @@
 [submodule "api-javascript"]
 	path = api-javascript
 	url = https://github.com/ishu-codes/ragify-api-javascript
+[submodule "api-python"]
+	path = api-python
+	url = https://github.com/ishu-codes/ragify-api-python
